@@ -9,28 +9,31 @@ function setupInputs() {
   const D = document.getElementById("D");
   const type = document.getElementById("type");
 
+  function restoreIfEmpty(input, minValue) {
+    if (input.value === "") input.value = minValue;
+  }
+
   // Height A: 100–2440
   A.addEventListener("input", () => {
+    restoreIfEmpty(A, 100);
     A.value = clamp(A.value, 100, 2440);
   });
 
   // Bottom width B: 50–1220
   B.addEventListener("input", () => {
+    restoreIfEmpty(B, 50);
     B.value = clamp(B.value, 50, 1220);
 
-    // Update C max
     const maxC = Math.max(1, B.value - 1);
     C.max = maxC;
-
-    // Clamp C
     C.value = clamp(C.value, 1, maxC);
 
-    // Update D max
     updateDlimit();
   });
 
   // Top width C: 1–(B−1)
   C.addEventListener("input", () => {
+    restoreIfEmpty(C, 1);
     const maxC = Math.max(1, B.value - 1);
     C.value = clamp(C.value, 1, maxC);
 
@@ -39,6 +42,7 @@ function setupInputs() {
 
   // Offset D: 0–(B−C)
   D.addEventListener("input", () => {
+    restoreIfEmpty(D, 0);
     updateDlimit();
   });
 
@@ -66,7 +70,6 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
-// Run setup on load
 window.onload = setupInputs;
 
 
@@ -226,4 +229,70 @@ function drawArrow(ctx, x1, y1, x2, y2) {
   );
   ctx.closePath();
   ctx.fill();
+}
+
+
+// -------------------------------
+// EXPORT FUNCTIONS
+// -------------------------------
+
+function downloadPNG() {
+  const canvas = document.getElementById("canvas");
+  const link = document.createElement("a");
+  link.download = "trapezium.png";
+  link.href = canvas.toDataURL();
+  link.click();
+}
+
+function downloadDXF() {
+  const type = document.getElementById("type").value;
+  const A = Number(document.getElementById("A").value);
+  const B = Number(document.getElementById("B").value);
+  const C = Number(document.getElementById("C").value);
+  const D = Number(document.getElementById("D").value);
+
+  let pts;
+
+  if (type === "regular") {
+    const offset = (B - C) / 2;
+    pts = [
+      [offset, 0],
+      [offset + C, 0],
+      [B, A],
+      [0, A]
+    ];
+  }
+
+  if (type === "right") {
+    const offset = Math.max(0, B - C);
+    pts = [
+      [offset, 0],
+      [offset + C, 0],
+      [B, A],
+      [0, A]
+    ];
+  }
+
+  if (type === "irregular") {
+    pts = [
+      [D, 0],
+      [D + C, 0],
+      [B, A],
+      [0, A]
+    ];
+  }
+
+  let dxf = "0\nSECTION\n2\nENTITIES\n0\nLWPOLYLINE\n100\nAcDbPolyline\n90\n4\n70\n1\n";
+
+  pts.forEach(p => {
+    dxf += `10\n${p[0]}\n20\n${p[1]}\n`;
+  });
+
+  dxf += "0\nENDSEC\n0\nEOF";
+
+  const blob = new Blob([dxf], { type: "application/dxf" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "trapezium.dxf";
+  link.click();
 }
