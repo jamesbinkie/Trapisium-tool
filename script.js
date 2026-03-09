@@ -61,14 +61,13 @@ function updateDynamicLimits() {
   const maxC = Math.max(1, Bv - 1);
   C.max = maxC;
   if (Cv > maxC) C.value = maxC;
-
-  // Update the label under C
   document.getElementById("CmaxLabel").textContent = maxC;
 
   // Update D max
   const maxD = Math.max(0, Bv - Cv);
   D.max = maxD;
   if (Number(D.value) > maxD) D.value = maxD;
+  document.getElementById("DmaxLabel").textContent = maxD;
 }
 
 function clamp(value, min, max) {
@@ -104,12 +103,12 @@ function drawTrapezium() {
   }
 
   if (type === "right") {
-    const offset = Math.max(0, B - C);
+    // Slope on the RIGHT side
     pts = [
-      [offset, 0],
-      [offset + C, 0],
-      [B, A],
-      [0, A]
+      [0, 0],      // top-left
+      [C, 0],      // top-right
+      [B, A],      // bottom-right
+      [0, A]       // bottom-left
     ];
   }
 
