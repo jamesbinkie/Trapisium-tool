@@ -62,6 +62,9 @@ function updateDynamicLimits() {
   C.max = maxC;
   if (Cv > maxC) C.value = maxC;
 
+  // Update the label under C
+  document.getElementById("CmaxLabel").textContent = maxC;
+
   // Update D max
   const maxD = Math.max(0, Bv - Cv);
   D.max = maxD;
