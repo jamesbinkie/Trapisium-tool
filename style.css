@@ -80,14 +80,14 @@ button {
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  background: #5865F2;
+  background: #009fe3;   /* Updated colour */
   color: #fff;
   font-weight: 600;
   transition: background 0.15s ease;
 }
 
 button:hover {
-  background: #4752c4;
+  background: #007fb5;   /* Slightly darker hover tone */
 }
 
 /* ---------- CANVAS ---------- */
