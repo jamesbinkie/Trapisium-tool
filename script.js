@@ -1,3 +1,79 @@
+// -------------------------------
+// INPUT VALIDATION + LIVE LOGIC
+// -------------------------------
+
+function setupInputs() {
+  const A = document.getElementById("A");
+  const B = document.getElementById("B");
+  const C = document.getElementById("C");
+  const D = document.getElementById("D");
+  const type = document.getElementById("type");
+
+  // Height A: 100–2440
+  A.addEventListener("input", () => {
+    A.value = clamp(A.value, 100, 2440);
+  });
+
+  // Bottom width B: 50–1220
+  B.addEventListener("input", () => {
+    B.value = clamp(B.value, 50, 1220);
+
+    // Update C max
+    const maxC = Math.max(1, B.value - 1);
+    C.max = maxC;
+
+    // Clamp C
+    C.value = clamp(C.value, 1, maxC);
+
+    // Update D max
+    updateDlimit();
+  });
+
+  // Top width C: 1–(B−1)
+  C.addEventListener("input", () => {
+    const maxC = Math.max(1, B.value - 1);
+    C.value = clamp(C.value, 1, maxC);
+
+    updateDlimit();
+  });
+
+  // Offset D: 0–(B−C)
+  D.addEventListener("input", () => {
+    updateDlimit();
+  });
+
+  // Show/hide D based on type
+  type.addEventListener("change", () => {
+    const Dlabel = document.getElementById("Dlabel");
+    Dlabel.style.display = type.value === "irregular" ? "inline-block" : "none";
+    updateDlimit();
+  });
+}
+
+function updateDlimit() {
+  const B = Number(document.getElementById("B").value);
+  const C = Number(document.getElementById("C").value);
+  const D = document.getElementById("D");
+
+  const maxD = Math.max(0, B - C);
+  D.max = maxD;
+  D.value = clamp(D.value, 0, maxD);
+}
+
+function clamp(value, min, max) {
+  value = Number(value);
+  if (isNaN(value)) return min;
+  return Math.min(Math.max(value, min), max);
+}
+
+// Run setup on load
+window.onload = setupInputs;
+
+
+// -------------------------------
+// DRAWING + SCALING + DIMENSIONS
+// -------------------------------
+
 function drawTrapezium() {
   const type = document.getElementById("type").value;
   const A = Number(document.getElementById("A").value);
@@ -8,31 +84,31 @@ function drawTrapezium() {
   let pts;
 
   if (type === "regular") {
-    const offset = (B - A) / 2;
+    const offset = (B - C) / 2;
     pts = [
       [offset, 0],
-      [offset + A, 0],
-      [B, C],
-      [0, C]
+      [offset + C, 0],
+      [B, A],
+      [0, A]
     ];
   }
 
   if (type === "right") {
-    const offset = Math.max(0, B - A);
+    const offset = Math.max(0, B - C);
     pts = [
       [offset, 0],
-      [offset + A, 0],
-      [B, C],
-      [0, C]
+      [offset + C, 0],
+      [B, A],
+      [0, A]
     ];
   }
 
   if (type === "irregular") {
     pts = [
       [D, 0],
-      [D + A, 0],
-      [B, C],
-      [0, C]
+      [D + C, 0],
+      [B, A],
+      [0, A]
     ];
   }
 
@@ -40,7 +116,7 @@ function drawTrapezium() {
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // --- AUTO SCALE ---
+  // Auto-scale
   const xs = pts.map(p => p[0]);
   const ys = pts.map(p => p[1]);
 
@@ -52,7 +128,7 @@ function drawTrapezium() {
   const shapeWidth = maxX - minX;
   const shapeHeight = maxY - minY;
 
-  const margin = 120; // space for dimensions
+  const margin = 150;
   const scaleX = (canvas.width - margin * 2) / shapeWidth;
   const scaleY = (canvas.height - margin * 2) / shapeHeight;
 
@@ -61,7 +137,7 @@ function drawTrapezium() {
   const offsetX = (canvas.width - shapeWidth * scale) / 2 - minX * scale;
   const offsetY = (canvas.height - shapeHeight * scale) / 2 - minY * scale;
 
-  // --- DRAW SHAPE ---
+  // Draw shape
   ctx.beginPath();
   ctx.moveTo(pts[0][0] * scale + offsetX, pts[0][1] * scale + offsetY);
 
@@ -74,7 +150,6 @@ function drawTrapezium() {
   ctx.strokeStyle = "#000";
   ctx.stroke();
 
-  // --- DIMENSIONS ---
   drawDimensions(ctx, pts, scale, offsetX, offsetY, A, B, C);
 }
 
@@ -89,17 +164,17 @@ function drawDimensions(ctx, pts, scale, offsetX, offsetY, A, B, C) {
   const BR = pts[2];
   const BL = pts[3];
 
-  // TOP WIDTH (A)
+  // Top width (C)
   const topY = Math.min(TL[1], TR[1]) * scale + offsetY - 30;
   drawDimLine(ctx,
     TL[0] * scale + offsetX,
     topY,
     TR[0] * scale + offsetX,
     topY,
-    `${A} mm`
+    `${C} mm`
   );
 
-  // BOTTOM WIDTH (B)
+  // Bottom width (B)
   const bottomY = Math.max(BL[1], BR[1]) * scale + offsetY + 40;
   drawDimLine(ctx,
     BL[0] * scale + offsetX,
@@ -109,14 +184,14 @@ function drawDimensions(ctx, pts, scale, offsetX, offsetY, A, B, C) {
     `${B} mm`
   );
 
-  // HEIGHT (C)
+  // Height (A)
   const leftX = Math.min(TL[0], BL[0]) * scale + offsetX - 40;
   drawDimLine(ctx,
     leftX,
     TL[1] * scale + offsetY,
     leftX,
     BL[1] * scale + offsetY,
-    `${C} mm`
+    `${A} mm`
   );
 }
 
@@ -151,65 +226,4 @@ function drawArrow(ctx, x1, y1, x2, y2) {
   );
   ctx.closePath();
   ctx.fill();
-}
-
-function downloadPNG() {
-  const canvas = document.getElementById("canvas");
-  const link = document.createElement("a");
-  link.download = "trapezium.png";
-  link.href = canvas.toDataURL();
-  link.click();
-}
-
-function downloadDXF() {
-  const type = document.getElementById("type").value;
-  const A = Number(document.getElementById("A").value);
-  const B = Number(document.getElementById("B").value);
-  const C = Number(document.getElementById("C").value);
-  const D = Number(document.getElementById("D").value);
-
-  let pts;
-
-  if (type === "regular") {
-    const offset = (B - A) / 2;
-    pts = [
-      [offset, 0],
-      [offset + A, 0],
-      [B, C],
-      [0, C]
-    ];
-  }
-
-  if (type === "right") {
-    const offset = Math.max(0, B - A);
-    pts = [
-      [offset, 0],
-      [offset + A, 0],
-      [B, C],
-      [0, C]
-    ];
-  }
-
-  if (type === "irregular") {
-    pts = [
-      [D, 0],
-      [D + A, 0],
-      [B, C],
-      [0, C]
-    ];
-  }
-
-  let dxf = "0\nSECTION\n2\nENTITIES\n0\nLWPOLYLINE\n100\nAcDbPolyline\n90\n4\n70\n1\n";
-
-  pts.forEach(p => {
-    dxf += `10\n${p[0]}\n20\n${p[1]}\n`;
-  });
-
-  dxf += "0\nENDSEC\n0\nEOF";
-
-  const blob = new Blob([dxf], { type: "application/dxf" });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = "trapezium.dxf";
-  link.click();
 }
