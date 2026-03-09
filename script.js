@@ -9,59 +9,63 @@ function setupInputs() {
   const D = document.getElementById("D");
   const type = document.getElementById("type");
 
-  function restoreIfEmpty(input, minValue) {
-    if (input.value === "") input.value = minValue;
+  // Allow empty while typing, clamp only on blur
+  function clampOnBlur(input, min, max) {
+    input.addEventListener("blur", () => {
+      if (input.value === "") input.value = min;
+      input.value = clamp(input.value, min, max);
+      updateDynamicLimits();
+    });
   }
 
-  // Height A: 100–2440
-  A.addEventListener("input", () => {
-    restoreIfEmpty(A, 100);
-    A.value = clamp(A.value, 100, 2440);
-  });
+  // A: 100–2440
+  clampOnBlur(A, 100, 2440);
 
-  // Bottom width B: 50–1220
-  B.addEventListener("input", () => {
-    restoreIfEmpty(B, 50);
-    B.value = clamp(B.value, 50, 1220);
+  // B: 50–1220
+  clampOnBlur(B, 50, 1220);
 
-    const maxC = Math.max(1, B.value - 1);
-    C.max = maxC;
+  // C: 1–(B−1)
+  C.addEventListener("blur", () => {
+    const maxC = Math.max(1, Number(B.value) - 1);
+    if (C.value === "") C.value = 1;
     C.value = clamp(C.value, 1, maxC);
-
-    updateDlimit();
+    updateDynamicLimits();
   });
 
-  // Top width C: 1–(B−1)
-  C.addEventListener("input", () => {
-    restoreIfEmpty(C, 1);
-    const maxC = Math.max(1, B.value - 1);
-    C.value = clamp(C.value, 1, maxC);
-
-    updateDlimit();
+  // D: 0–(B−C)
+  D.addEventListener("blur", () => {
+    const maxD = Math.max(0, Number(B.value) - Number(C.value));
+    if (D.value === "") D.value = 0;
+    D.value = clamp(D.value, 0, maxD);
   });
 
-  // Offset D: 0–(B−C)
-  D.addEventListener("input", () => {
-    restoreIfEmpty(D, 0);
-    updateDlimit();
-  });
-
-  // Show/hide D based on type
+  // Update limits when type changes
   type.addEventListener("change", () => {
     const Dlabel = document.getElementById("Dlabel");
     Dlabel.style.display = type.value === "irregular" ? "inline-block" : "none";
-    updateDlimit();
+    updateDynamicLimits();
   });
+
+  // Update limits when B or C changes (live)
+  B.addEventListener("input", updateDynamicLimits);
+  C.addEventListener("input", updateDynamicLimits);
 }
 
-function updateDlimit() {
-  const B = Number(document.getElementById("B").value);
-  const C = Number(document.getElementById("C").value);
+function updateDynamicLimits() {
+  const Bv = Number(document.getElementById("B").value);
+  const Cv = Number(document.getElementById("C").value);
+  const C = document.getElementById("C");
   const D = document.getElementById("D");
 
-  const maxD = Math.max(0, B - C);
+  // Update C max
+  const maxC = Math.max(1, Bv - 1);
+  C.max = maxC;
+  if (Cv > maxC) C.value = maxC;
+
+  // Update D max
+  const maxD = Math.max(0, Bv - Cv);
   D.max = maxD;
-  D.value = clamp(D.value, 0, maxD);
+  if (Number(D.value) > maxD) D.value = maxD;
 }
 
 function clamp(value, min, max) {
