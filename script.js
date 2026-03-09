@@ -232,12 +232,12 @@ function drawArrow(ctx, x1, y1, x2, y2) {
 
 
 // -------------------------------
-// EDGE BANDING (joined corners)
+// PERFECT-CORNER EDGE BANDING
 // -------------------------------
 
-// Compute a full outward offset polygon for a clockwise shape
-function computeOffsetPolygon(pts, scale, offsetX, offsetY, offsetPx) {
-  const out = [];
+// Compute outward offset edges for a clockwise polygon
+function computeOffsetEdges(pts, scale, offsetX, offsetY, offsetPx) {
+  const edges = [];
 
   for (let i = 0; i < pts.length; i++) {
     const p1 = pts[i];
@@ -252,10 +252,11 @@ function computeOffsetPolygon(pts, scale, offsetX, offsetY, offsetPx) {
     const dy = y2 - y1;
     const len = Math.sqrt(dx * dx + dy * dy);
 
-    const nx = dy / len;      // outward normal for clockwise polygon
+    // OUTWARD normal for clockwise polygon
+    const nx = dy / len;
     const ny = -dx / len;
 
-    out.push({
+    edges.push({
       x1: x1 + nx * offsetPx,
       y1: y1 + ny * offsetPx,
       x2: x2 + nx * offsetPx,
@@ -263,47 +264,81 @@ function computeOffsetPolygon(pts, scale, offsetX, offsetY, offsetPx) {
     });
   }
 
-  return out;
+  return edges;
 }
 
-// Draw only the selected edges of the offset polygon
+// Line intersection helper
+function intersectLines(e1, e2) {
+  const x1 = e1.x1, y1 = e1.y1;
+  const x2 = e1.x2, y2 = e1.y2;
+  const x3 = e2.x1, y3 = e2.y1;
+  const x4 = e2.x2, y4 = e2.y2;
+
+  const denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+  if (denom === 0) return { x: x2, y: y2 };
+
+  const px =
+    ((x1 * y2 - y1 * x2) * (x3 - x4) -
+     (x1 - x2) * (x3 * y4 - y3 * x4)) / denom;
+
+  const py =
+    ((x1 * y2 - y1 * x2) * (y3 - y4) -
+     (y1 - y2) * (x3 * y4 - y3 * x4)) / denom;
+
+  return { x: px, y: py };
+}
+
+// Build a joined offset polygon
+function computeOffsetPolygon(pts, scale, offsetX, offsetY, offsetPx) {
+  const edges = computeOffsetEdges(pts, scale, offsetX, offsetY, offsetPx);
+  const joined = [];
+
+  for (let i = 0; i < edges.length; i++) {
+    const e1 = edges[i];
+    const e2 = edges[(i + 1) % edges.length];
+    joined.push(intersectLines(e1, e2));
+  }
+
+  return joined;
+}
+
+// Draw only selected edges of the joined polygon
 function drawBanding(ctx, pts, scale, offsetX, offsetY) {
   const offsetPx = 12;
-
-  const edges = computeOffsetPolygon(pts, scale, offsetX, offsetY, offsetPx);
+  const poly = computeOffsetPolygon(pts, scale, offsetX, offsetY, offsetPx);
 
   ctx.strokeStyle = "red";
   ctx.lineWidth = 3;
 
-  // Top edge = edge 0
+  // Top edge = 0→1
   if (document.getElementById("bandTop").checked) {
     ctx.beginPath();
-    ctx.moveTo(edges[0].x1, edges[0].y1);
-    ctx.lineTo(edges[0].x2, edges[0].y2);
+    ctx.moveTo(poly[0].x, poly[0].y);
+    ctx.lineTo(poly[1].x, poly[1].y);
     ctx.stroke();
   }
 
-  // Right edge = edge 1
+  // Right edge = 1→2
   if (document.getElementById("bandRight").checked) {
     ctx.beginPath();
-    ctx.moveTo(edges[1].x1, edges[1].y1);
-    ctx.lineTo(edges[1].x2, edges[1].y2);
+    ctx.moveTo(poly[1].x, poly[1].y);
+    ctx.lineTo(poly[2].x, poly[2].y);
     ctx.stroke();
   }
 
-  // Bottom edge = edge 2
+  // Bottom edge = 2→3
   if (document.getElementById("bandBottom").checked) {
     ctx.beginPath();
-    ctx.moveTo(edges[2].x1, edges[2].y1);
-    ctx.lineTo(edges[2].x2, edges[2].y2);
+    ctx.moveTo(poly[2].x, poly[2].y);
+    ctx.lineTo(poly[3].x, poly[3].y);
     ctx.stroke();
   }
 
-  // Left edge = edge 3
+  // Left edge = 3→0
   if (document.getElementById("bandLeft").checked) {
     ctx.beginPath();
-    ctx.moveTo(edges[3].x1, edges[3].y1);
-    ctx.lineTo(edges[3].x2, edges[3].y2);
+    ctx.moveTo(poly[3].x, poly[3].y);
+    ctx.lineTo(poly[0].x, poly[0].y);
     ctx.stroke();
   }
 }
