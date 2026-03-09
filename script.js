@@ -9,7 +9,6 @@ function setupInputs() {
   const D = document.getElementById("D");
   const type = document.getElementById("type");
 
-  // Allow empty while typing, clamp only on blur
   function clampOnBlur(input, min, max) {
     input.addEventListener("blur", () => {
       if (input.value === "") input.value = min;
@@ -18,13 +17,9 @@ function setupInputs() {
     });
   }
 
-  // A: 100–2440
   clampOnBlur(A, 100, 2440);
-
-  // B: 50–1220
   clampOnBlur(B, 50, 1220);
 
-  // C: 1–(B−1)
   C.addEventListener("blur", () => {
     const maxC = Math.max(1, Number(B.value) - 1);
     if (C.value === "") C.value = 1;
@@ -32,23 +27,29 @@ function setupInputs() {
     updateDynamicLimits();
   });
 
-  // D: 0–(B−C)
   D.addEventListener("blur", () => {
     const maxD = Math.max(0, Number(B.value) - Number(C.value));
     if (D.value === "") D.value = 0;
     D.value = clamp(D.value, 0, maxD);
+    updateDynamicLimits();
   });
 
-  // Update limits when type changes
   type.addEventListener("change", () => {
     const Dlabel = document.getElementById("Dlabel");
     Dlabel.style.display = type.value === "irregular" ? "inline-block" : "none";
     updateDynamicLimits();
   });
 
-  // Update limits when B or C changes (live)
   B.addEventListener("input", updateDynamicLimits);
   C.addEventListener("input", updateDynamicLimits);
+
+  ["bandTop", "bandRight", "bandBottom", "bandLeft"].forEach(id => {
+    document.getElementById(id).addEventListener("change", () => {
+      drawTrapezium();
+    });
+  });
+
+  updateDynamicLimits();
 }
 
 function updateDynamicLimits() {
@@ -57,14 +58,12 @@ function updateDynamicLimits() {
   const C = document.getElementById("C");
   const D = document.getElementById("D");
 
-  // Update C max
   const maxC = Math.max(1, Bv - 1);
   C.max = maxC;
   if (Cv > maxC) C.value = maxC;
   document.getElementById("CmaxLabel").textContent = maxC;
 
-  // Update D max
-  const maxD = Math.max(0, Bv - Cv);
+  const maxD = Math.max(0, Bv - Number(C.value || 0));
   D.max = maxD;
   if (Number(D.value) > maxD) D.value = maxD;
   document.getElementById("DmaxLabel").textContent = maxD;
@@ -95,29 +94,29 @@ function drawTrapezium() {
   if (type === "regular") {
     const offset = (B - C) / 2;
     pts = [
-      [offset, 0],
-      [offset + C, 0],
-      [B, A],
-      [0, A]
+      [offset, 0],      // TL
+      [offset + C, 0],  // TR
+      [B, A],           // BR
+      [0, A]            // BL
     ];
   }
 
   if (type === "right") {
     // Slope on the RIGHT side
     pts = [
-      [0, 0],      // top-left
-      [C, 0],      // top-right
-      [B, A],      // bottom-right
-      [0, A]       // bottom-left
+      [0, 0],   // TL
+      [C, 0],   // TR
+      [B, A],   // BR
+      [0, A]    // BL
     ];
   }
 
   if (type === "irregular") {
     pts = [
-      [D, 0],
-      [D + C, 0],
-      [B, A],
-      [0, A]
+      [D, 0],      // TL
+      [D + C, 0],  // TR
+      [B, A],      // BR
+      [0, A]       // BL
     ];
   }
 
@@ -125,7 +124,6 @@ function drawTrapezium() {
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Auto-scale
   const xs = pts.map(p => p[0]);
   const ys = pts.map(p => p[1]);
 
@@ -146,20 +144,18 @@ function drawTrapezium() {
   const offsetX = (canvas.width - shapeWidth * scale) / 2 - minX * scale;
   const offsetY = (canvas.height - shapeHeight * scale) / 2 - minY * scale;
 
-  // Draw shape
   ctx.beginPath();
   ctx.moveTo(pts[0][0] * scale + offsetX, pts[0][1] * scale + offsetY);
-
   for (let i = 1; i < pts.length; i++) {
     ctx.lineTo(pts[i][0] * scale + offsetX, pts[i][1] * scale + offsetY);
   }
-
   ctx.closePath();
   ctx.lineWidth = 3;
   ctx.strokeStyle = "#000";
   ctx.stroke();
 
   drawDimensions(ctx, pts, scale, offsetX, offsetY, A, B, C);
+  drawBanding(ctx, pts, scale, offsetX, offsetY);
 }
 
 function drawDimensions(ctx, pts, scale, offsetX, offsetY, A, B, C) {
@@ -173,7 +169,6 @@ function drawDimensions(ctx, pts, scale, offsetX, offsetY, A, B, C) {
   const BR = pts[2];
   const BL = pts[3];
 
-  // Top width (C)
   const topY = Math.min(TL[1], TR[1]) * scale + offsetY - 30;
   drawDimLine(ctx,
     TL[0] * scale + offsetX,
@@ -183,7 +178,6 @@ function drawDimensions(ctx, pts, scale, offsetX, offsetY, A, B, C) {
     `${C} mm`
   );
 
-  // Bottom width (B)
   const bottomY = Math.max(BL[1], BR[1]) * scale + offsetY + 40;
   drawDimLine(ctx,
     BL[0] * scale + offsetX,
@@ -193,7 +187,6 @@ function drawDimensions(ctx, pts, scale, offsetX, offsetY, A, B, C) {
     `${B} mm`
   );
 
-  // Height (A)
   const leftX = Math.min(TL[0], BL[0]) * scale + offsetX - 40;
   drawDimLine(ctx,
     leftX,
@@ -239,6 +232,62 @@ function drawArrow(ctx, x1, y1, x2, y2) {
 
 
 // -------------------------------
+// EDGE BANDING
+// -------------------------------
+
+function drawBanding(ctx, pts, scale, offsetX, offsetY) {
+  const offsetPx = 12;
+
+  const TL = pts[0];
+  const TR = pts[1];
+  const BR = pts[2];
+  const BL = pts[3];
+
+  const TLx = TL[0] * scale + offsetX;
+  const TLy = TL[1] * scale + offsetY;
+  const TRx = TR[0] * scale + offsetX;
+  const TRy = TR[1] * scale + offsetY;
+  const BRx = BR[0] * scale + offsetX;
+  const BRy = BR[1] * scale + offsetY;
+  const BLx = BL[0] * scale + offsetX;
+  const BLy = BL[1] * scale + offsetY;
+
+  if (document.getElementById("bandTop").checked)
+    drawOffsetEdge(ctx, TLx, TLy, TRx, TRy, offsetPx);
+
+  if (document.getElementById("bandRight").checked)
+    drawOffsetEdge(ctx, TRx, TRy, BRx, BRy, offsetPx);
+
+  if (document.getElementById("bandBottom").checked)
+    drawOffsetEdge(ctx, BRx, BRy, BLx, BLy, offsetPx);
+
+  if (document.getElementById("bandLeft").checked)
+    drawOffsetEdge(ctx, BLx, BLy, TLx, TLy, offsetPx);
+}
+
+// Clockwise polygon → outward is left normal: (-dy, dx)
+function drawOffsetEdge(ctx, x1, y1, x2, y2, offsetPx) {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const len = Math.sqrt(dx * dx + dy * dy);
+  if (len === 0) return;
+
+  const nx = -dy / len;
+  const ny = dx / len;
+
+  const ox = nx * offsetPx;
+  const oy = ny * offsetPx;
+
+  ctx.beginPath();
+  ctx.moveTo(x1 + ox, y1 + oy);
+  ctx.lineTo(x2 + ox, y2 + oy);
+  ctx.strokeStyle = "red";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+}
+
+
+// -------------------------------
 // EXPORT FUNCTIONS
 // -------------------------------
 
@@ -270,10 +319,9 @@ function downloadDXF() {
   }
 
   if (type === "right") {
-    const offset = Math.max(0, B - C);
     pts = [
-      [offset, 0],
-      [offset + C, 0],
+      [0, 0],
+      [C, 0],
       [B, A],
       [0, A]
     ];
