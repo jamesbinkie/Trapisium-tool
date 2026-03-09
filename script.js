@@ -265,15 +265,16 @@ function drawBanding(ctx, pts, scale, offsetX, offsetY) {
     drawOffsetEdge(ctx, BLx, BLy, TLx, TLy, offsetPx);
 }
 
-// Clockwise polygon → outward is left normal: (-dy, dx)
+// Clockwise polygon → outward is right normal: (dy, -dx)
 function drawOffsetEdge(ctx, x1, y1, x2, y2, offsetPx) {
   const dx = x2 - x1;
   const dy = y2 - y1;
   const len = Math.sqrt(dx * dx + dy * dy);
   if (len === 0) return;
 
-  const nx = -dy / len;
-  const ny = dx / len;
+  // OUTWARD normal for clockwise polygon
+  const nx = dy / len;
+  const ny = -dx / len;
 
   const ox = nx * offsetPx;
   const oy = ny * offsetPx;
@@ -285,7 +286,6 @@ function drawOffsetEdge(ctx, x1, y1, x2, y2, offsetPx) {
   ctx.lineWidth = 3;
   ctx.stroke();
 }
-
 
 // -------------------------------
 // EXPORT FUNCTIONS
