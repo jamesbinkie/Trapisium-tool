@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Trapezium Generator</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h2>Trapezium Generator (mm)</h2>
+
+<div class="controls">
+  <label>Type:
+    <select id="type">
+      <option value="regular">Regular</option>
+      <option value="right">Right</option>
+      <option value="irregular">Irregular</option>
+    </select>
+  </label>
+
+  <label>A (top width): <input id="A" type="number"></label>
+  <label>B (bottom width): <input id="B" type="number"></label>
+  <label>C (height): <input id="C" type="number"></label>
+  <label id="Dlabel" style="display:none;">D (top offset): <input id="D" type="number"></label>
+
+  <button onclick="drawTrapezium()">Draw</button>
+  <button onclick="downloadPNG()">Download PNG</button>
+  <button onclick="downloadDXF()">Download DXF</button>
+</div>
+
+<canvas id="canvas" width="800" height="600"></canvas>
+
+<script src="script.js"></script>
+</body>
+</html>
