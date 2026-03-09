@@ -282,31 +282,36 @@ function drawBanding(ctx, pts, scale, offsetX, offsetY) {
   ctx.strokeStyle = "red";
   ctx.lineWidth = 3;
 
+  // Correct mapping:
+  // poly[3] → poly[0] = TOP
   if (document.getElementById("bandTop").checked) {
+    ctx.beginPath();
+    ctx.moveTo(poly[3].x, poly[3].y);
+    ctx.lineTo(poly[0].x, poly[0].y);
+    ctx.stroke();
+  }
+
+  // poly[0] → poly[1] = RIGHT
+  if (document.getElementById("bandRight").checked) {
     ctx.beginPath();
     ctx.moveTo(poly[0].x, poly[0].y);
     ctx.lineTo(poly[1].x, poly[1].y);
     ctx.stroke();
   }
 
-  if (document.getElementById("bandRight").checked) {
+  // poly[1] → poly[2] = BOTTOM
+  if (document.getElementById("bandBottom").checked) {
     ctx.beginPath();
     ctx.moveTo(poly[1].x, poly[1].y);
     ctx.lineTo(poly[2].x, poly[2].y);
     ctx.stroke();
   }
 
-  if (document.getElementById("bandBottom").checked) {
+  // poly[2] → poly[3] = LEFT
+  if (document.getElementById("bandLeft").checked) {
     ctx.beginPath();
     ctx.moveTo(poly[2].x, poly[2].y);
     ctx.lineTo(poly[3].x, poly[3].y);
-    ctx.stroke();
-  }
-
-  if (document.getElementById("bandLeft").checked) {
-    ctx.beginPath();
-    ctx.moveTo(poly[3].x, poly[3].y);
-    ctx.lineTo(poly[0].x, poly[0].y);
     ctx.stroke();
   }
 }
