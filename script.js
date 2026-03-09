@@ -374,6 +374,9 @@ function downloadDXF() {
     ];
   }
 
+  // Flip Y axis for DXF (CAD uses Y-up)
+  const maxY = Math.max(...pts.map(p => p[1]));
+
   let dxf = "";
 
   // HEADER
@@ -395,7 +398,9 @@ function downloadDXF() {
   dxf += "0\nLWPOLYLINE\n100\nAcDbPolyline\n90\n4\n70\n1\n8\n0\n";
 
   pts.forEach(p => {
-    dxf += `10\n${p[0]}\n20\n${p[1]}\n`;
+    const x = p[0];
+    const y = maxY - p[1]; // flip vertically
+    dxf += `10\n${x}\n20\n${y}\n`;
   });
 
   dxf += "0\nENDSEC\n0\nEOF";
