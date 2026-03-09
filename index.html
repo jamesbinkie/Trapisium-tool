@@ -1,9 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Trapezium Generator</title>
+
+  <!-- Guaranteed CSS load with cache-buster -->
+  <link rel="stylesheet" href="style.css?v=9999">
+
+  <!-- Fallback test: if CSS fails to load, this will turn the background green -->
+  <style>
+    body { background: green !important; }
+  </style>
+</head>
+
 <body>
+
 <div class="container">
 
 <h2>Trapezium Generator (mm)</h2>
 
-<div class="panel controls">
+<div class="controls panel">
   <label>A (Height):
     <input id="A" type="number" value="100" min="100" max="2440" onclick="this.select()">
     <div class="range">Min 100 mm — Max 2440 mm</div>
@@ -36,7 +52,7 @@
 </div>
 
 <h3>Edge Banding</h3>
-<div class="panel edge-controls">
+<div class="edge-controls panel">
   <label><input type="checkbox" id="bandTop"> Top</label>
   <label><input type="checkbox" id="bandRight"> Right</label>
   <label><input type="checkbox" id="bandBottom"> Bottom</label>
@@ -44,7 +60,7 @@
 </div>
 
 <h3>Export</h3>
-<div class="panel file-controls">
+<div class="file-controls panel">
   <label>File Name:
     <input id="fileName" type="text" value="trapezium">
   </label>
@@ -57,6 +73,8 @@
 
 </div>
 
-<div id="versionLabel">v1.3.5</div>
+<div id="versionLabel">v1.3.6</div>
+
 <script src="script.js"></script>
 </body>
+</html>
