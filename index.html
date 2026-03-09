@@ -10,6 +10,27 @@
 <h2>Trapezium Generator (mm)</h2>
 
 <div class="controls">
+
+  <label>A (Height):
+    <input id="A" type="number" value="100" min="100" max="2440" onclick="this.select()">
+    <div class="range">Min 100 mm — Max 2440 mm</div>
+  </label>
+
+  <label>B (Bottom Width):
+    <input id="B" type="number" value="50" min="50" max="1220" onclick="this.select()">
+    <div class="range">Min 50 mm — Max 1220 mm</div>
+  </label>
+
+  <label>C (Top Width):
+    <input id="C" type="number" value="1" min="1" onclick="this.select()">
+    <div class="range">Min 1 mm — Max B−1 mm</div>
+  </label>
+
+  <label id="Dlabel" style="display:none;">D (Offset):
+    <input id="D" type="number" value="0" min="0" onclick="this.select()">
+    <div class="range">0 mm → (B − C)</div>
+  </label>
+
   <label>Type:
     <select id="type">
       <option value="regular">Regular</option>
@@ -18,17 +39,13 @@
     </select>
   </label>
 
-  <label>A (top width): <input id="A" type="number"></label>
-  <label>B (bottom width): <input id="B" type="number"></label>
-  <label>C (height): <input id="C" type="number"></label>
-  <label id="Dlabel" style="display:none;">D (top offset): <input id="D" type="number"></label>
-
   <button onclick="drawTrapezium()">Draw</button>
   <button onclick="downloadPNG()">Download PNG</button>
   <button onclick="downloadDXF()">Download DXF</button>
+
 </div>
 
-<canvas id="canvas" width="800" height="600"></canvas>
+<canvas id="canvas" width="900" height="600"></canvas>
 
 <script src="script.js"></script>
 </body>
