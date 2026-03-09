@@ -232,60 +232,82 @@ function drawArrow(ctx, x1, y1, x2, y2) {
 
 
 // -------------------------------
-// EDGE BANDING
+// EDGE BANDING (joined corners)
 // -------------------------------
 
+// Compute a full outward offset polygon for a clockwise shape
+function computeOffsetPolygon(pts, scale, offsetX, offsetY, offsetPx) {
+  const out = [];
+
+  for (let i = 0; i < pts.length; i++) {
+    const p1 = pts[i];
+    const p2 = pts[(i + 1) % pts.length];
+
+    const x1 = p1[0] * scale + offsetX;
+    const y1 = p1[1] * scale + offsetY;
+    const x2 = p2[0] * scale + offsetX;
+    const y2 = p2[1] * scale + offsetY;
+
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len = Math.sqrt(dx * dx + dy * dy);
+
+    const nx = dy / len;      // outward normal for clockwise polygon
+    const ny = -dx / len;
+
+    out.push({
+      x1: x1 + nx * offsetPx,
+      y1: y1 + ny * offsetPx,
+      x2: x2 + nx * offsetPx,
+      y2: y2 + ny * offsetPx
+    });
+  }
+
+  return out;
+}
+
+// Draw only the selected edges of the offset polygon
 function drawBanding(ctx, pts, scale, offsetX, offsetY) {
   const offsetPx = 12;
 
-  const TL = pts[0];
-  const TR = pts[1];
-  const BR = pts[2];
-  const BL = pts[3];
+  const edges = computeOffsetPolygon(pts, scale, offsetX, offsetY, offsetPx);
 
-  const TLx = TL[0] * scale + offsetX;
-  const TLy = TL[1] * scale + offsetY;
-  const TRx = TR[0] * scale + offsetX;
-  const TRy = TR[1] * scale + offsetY;
-  const BRx = BR[0] * scale + offsetX;
-  const BRy = BR[1] * scale + offsetY;
-  const BLx = BL[0] * scale + offsetX;
-  const BLy = BL[1] * scale + offsetY;
-
-  if (document.getElementById("bandTop").checked)
-    drawOffsetEdge(ctx, TLx, TLy, TRx, TRy, offsetPx);
-
-  if (document.getElementById("bandRight").checked)
-    drawOffsetEdge(ctx, TRx, TRy, BRx, BRy, offsetPx);
-
-  if (document.getElementById("bandBottom").checked)
-    drawOffsetEdge(ctx, BRx, BRy, BLx, BLy, offsetPx);
-
-  if (document.getElementById("bandLeft").checked)
-    drawOffsetEdge(ctx, BLx, BLy, TLx, TLy, offsetPx);
-}
-
-// Clockwise polygon → outward is right normal: (dy, -dx)
-function drawOffsetEdge(ctx, x1, y1, x2, y2, offsetPx) {
-  const dx = x2 - x1;
-  const dy = y2 - y1;
-  const len = Math.sqrt(dx * dx + dy * dy);
-  if (len === 0) return;
-
-  // OUTWARD normal for clockwise polygon
-  const nx = dy / len;
-  const ny = -dx / len;
-
-  const ox = nx * offsetPx;
-  const oy = ny * offsetPx;
-
-  ctx.beginPath();
-  ctx.moveTo(x1 + ox, y1 + oy);
-  ctx.lineTo(x2 + ox, y2 + oy);
   ctx.strokeStyle = "red";
   ctx.lineWidth = 3;
-  ctx.stroke();
+
+  // Top edge = edge 0
+  if (document.getElementById("bandTop").checked) {
+    ctx.beginPath();
+    ctx.moveTo(edges[0].x1, edges[0].y1);
+    ctx.lineTo(edges[0].x2, edges[0].y2);
+    ctx.stroke();
+  }
+
+  // Right edge = edge 1
+  if (document.getElementById("bandRight").checked) {
+    ctx.beginPath();
+    ctx.moveTo(edges[1].x1, edges[1].y1);
+    ctx.lineTo(edges[1].x2, edges[1].y2);
+    ctx.stroke();
+  }
+
+  // Bottom edge = edge 2
+  if (document.getElementById("bandBottom").checked) {
+    ctx.beginPath();
+    ctx.moveTo(edges[2].x1, edges[2].y1);
+    ctx.lineTo(edges[2].x2, edges[2].y2);
+    ctx.stroke();
+  }
+
+  // Left edge = edge 3
+  if (document.getElementById("bandLeft").checked) {
+    ctx.beginPath();
+    ctx.moveTo(edges[3].x1, edges[3].y1);
+    ctx.lineTo(edges[3].x2, edges[3].y2);
+    ctx.stroke();
+  }
 }
+
 
 // -------------------------------
 // EXPORT FUNCTIONS
