@@ -60,9 +60,13 @@ function updateDynamicLimits() {
   const C = document.getElementById("C");
   const D = document.getElementById("D");
 
-  const maxC = Math.max(1, Bv - 1);
+  const maxC = Math.max(20, Bv - 1);
   C.max = maxC;
+  
+  // clamp to new min 20
+  if (Cv < 20) C.value = 20;
   if (Cv > maxC) C.value = maxC;
+  
   document.getElementById("CmaxLabel").textContent = maxC;
 
   const maxD = Math.max(0, Bv - Number(C.value || 0));
