@@ -18,25 +18,55 @@ function setupInputs() {
     });
   }
 
+  // A and B clamp normally
   clampOnBlur(A, 100, 2440);
   clampOnBlur(B, 50, 1220);
 
+  // C — smooth typing, clamp only on blur
+  C.addEventListener("input", () => {
+    const Bv = Number(B.value);
+    const maxC = Math.max(20, Bv - 1);
+    document.getElementById("CmaxLabel").textContent = maxC;
+  });
+
   C.addEventListener("blur", () => {
-    const maxC = Math.max(1, Number(B.value) - 1);
-    if (C.value === "") C.value = 1;
-    C.value = clamp(C.value, 1, maxC);
+    const Bv = Number(B.value);
+    const maxC = Math.max(20, Bv - 1);
+
+    let val = Number(C.value);
+    if (isNaN(val) || C.value === "") val = 20;
+    if (val < 20) val = 20;
+    if (val > maxC) val = maxC;
+
+    C.value = val;
     updateDynamicLimits();
     drawTrapezium();
+  });
+
+  // D — smooth typing, clamp only on blur
+  D.addEventListener("input", () => {
+    const Bv = Number(B.value);
+    const Cv = Number(C.value);
+    const maxD = Math.max(0, Bv - Cv);
+    document.getElementById("DmaxLabel").textContent = maxD;
   });
 
   D.addEventListener("blur", () => {
-    const maxD = Math.max(0, Number(B.value) - Number(C.value));
-    if (D.value === "") D.value = 0;
-    D.value = clamp(D.value, 0, maxD);
+    const Bv = Number(B.value);
+    const Cv = Number(C.value);
+    const maxD = Math.max(0, Bv - Cv);
+
+    let val = Number(D.value);
+    if (isNaN(val) || D.value === "") val = 0;
+    if (val < 0) val = 0;
+    if (val > maxD) val = maxD;
+
+    D.value = val;
     updateDynamicLimits();
     drawTrapezium();
   });
 
+  // Type change toggles D visibility
   type.addEventListener("change", () => {
     const Dlabel = document.getElementById("Dlabel");
     Dlabel.style.display = type.value === "irregular" ? "inline-block" : "none";
@@ -44,14 +74,33 @@ function setupInputs() {
     drawTrapezium();
   });
 
-  B.addEventListener("input", () => { updateDynamicLimits(); drawTrapezium(); });
-  C.addEventListener("input", () => { updateDynamicLimits(); drawTrapezium(); });
-
-  ["bandTop", "bandRight", "bandBottom", "bandLeft"].forEach(id => {
-    document.getElementById(id).addEventListener("change", drawTrapezium);
+  // B affects C and D max values
+  B.addEventListener("input", () => {
+    updateDynamicLimits();
   });
 
   updateDynamicLimits();
+}
+
+function updateDynamicLimits() {
+  const Bv = Number(document.getElementById("B").value);
+  const C = document.getElementById("C");
+  const D = document.getElementById("D");
+
+  // Update C max
+  const maxC = Math.max(20, Bv - 1);
+  document.getElementById("CmaxLabel").textContent = maxC;
+
+  // Update D max
+  const Cv = Number(C.value);
+  const maxD = Math.max(0, Bv - Cv);
+  document.getElementById("DmaxLabel").textContent = maxD;
+}
+
+function clamp(value, min, max) {
+  value = Number(value);
+  if (isNaN(value)) return min;
+  return Math.min(Math.max(value, min), max);
 }
 
 function updateDynamicLimits() {
