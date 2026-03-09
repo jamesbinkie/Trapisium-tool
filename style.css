@@ -1,8 +1,11 @@
+/* ---------- GLOBAL ---------- */
+
 body {
-  font-family: Arial, sans-serif;
-  padding: 20px;
-  background: #f7f7f7;
+  font-family: "Segoe UI", Arial, sans-serif;
+  background: #2b2d31;
+  color: #f2f3f5;
   margin: 0;
+  padding: 20px;
 }
 
 .container {
@@ -10,48 +13,73 @@ body {
   margin: 0 auto;
 }
 
+/* ---------- HEADERS ---------- */
+
 h2, h3 {
   margin-top: 0;
+  font-weight: 600;
+  color: #f2f3f5;
 }
 
-.controls,
-.edge-controls,
-.file-controls {
-  background: #fff;
-  padding: 15px 20px;
-  border-radius: 8px;
+/* ---------- PANELS ---------- */
+
+.panel {
+  background: #313338;
+  padding: 18px 22px;
+  border-radius: 10px;
   margin-bottom: 20px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
 }
 
-.controls label,
-.file-controls label {
+/* ---------- INPUTS ---------- */
+
+.panel label {
   display: flex;
   flex-direction: column;
-  margin-bottom: 12px;
-  font-weight: bold;
+  margin-bottom: 14px;
+  font-weight: 600;
+  color: #e3e5e8;
 }
 
-.controls input,
-.file-controls input,
-.controls select {
-  padding: 6px 10px;
+.panel input,
+.panel select {
+  margin-top: 6px;
+  padding: 8px 10px;
   font-size: 15px;
-  border: 1px solid #ccc;
   border-radius: 6px;
-  margin-top: 4px;
+  border: 1px solid #1e1f22;
+  background: #1e1f22;
+  color: #f2f3f5;
+}
+
+.panel input:focus,
+.panel select:focus {
+  outline: none;
+  border-color: #5865F2;
+  box-shadow: 0 0 0 2px rgba(88,101,242,0.4);
 }
 
 .range {
   font-size: 12px;
-  color: #666;
+  color: #b5bac1;
   margin-top: 3px;
 }
+
+/* ---------- CHECKBOXES ---------- */
 
 .edge-controls label {
   margin-right: 20px;
   font-size: 15px;
+  display: inline-flex;
+  align-items: center;
 }
+
+.edge-controls input[type="checkbox"] {
+  margin-right: 8px;
+  transform: scale(1.2);
+}
+
+/* ---------- BUTTONS ---------- */
 
 button {
   padding: 10px 18px;
@@ -60,29 +88,36 @@ button {
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  background: #0078d4;
+  background: #5865F2;
   color: #fff;
+  font-weight: 600;
+  transition: background 0.15s ease;
 }
 
 button:hover {
-  background: #005fa3;
+  background: #4752c4;
 }
+
+/* ---------- CANVAS ---------- */
 
 canvas {
   display: block;
   margin: 0 auto;
   border: 1px solid #000;
-  background: #fff;
+  background: #1e1f22;
   max-width: 100%;
   height: auto;
+  border-radius: 8px;
 }
+
+/* ---------- VERSION LABEL ---------- */
 
 #versionLabel {
   position: fixed;
-  bottom: 10px;
-  right: 10px;
+  bottom: 12px;
+  right: 12px;
   font-size: 14px;
-  color: #666;
-  opacity: 0.7;
+  color: #b5bac1;
+  opacity: 0.8;
   user-select: none;
 }
