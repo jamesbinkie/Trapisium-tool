@@ -374,7 +374,25 @@ function downloadDXF() {
     ];
   }
 
-  let dxf = "0\nSECTION\n2\nENTITIES\n0\nLWPOLYLINE\n100\nAcDbPolyline\n90\n4\n70\n1\n";
+  let dxf = "";
+
+  // HEADER
+  dxf += "0\nSECTION\n2\nHEADER\n0\nENDSEC\n";
+
+  // TABLES (required for Inkscape)
+  dxf += "0\nSECTION\n2\nTABLES\n";
+
+  // LAYER TABLE
+  dxf += "0\nTABLE\n2\nLAYER\n70\n1\n";
+  dxf += "0\nLAYER\n2\n0\n70\n0\n62\n7\n6\nCONTINUOUS\n";
+  dxf += "0\nENDTAB\n";
+
+  dxf += "0\nENDSEC\n";
+
+  // ENTITIES
+  dxf += "0\nSECTION\n2\nENTITIES\n";
+
+  dxf += "0\nLWPOLYLINE\n100\nAcDbPolyline\n90\n4\n70\n1\n8\n0\n";
 
   pts.forEach(p => {
     dxf += `10\n${p[0]}\n20\n${p[1]}\n`;
