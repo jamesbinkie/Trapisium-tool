@@ -5,7 +5,7 @@
   <title>Trapezium Generator</title>
 
   <!-- Guaranteed CSS load with cache-buster -->
-  <link rel="stylesheet" href="style.css?v=9999">
+  <link rel="stylesheet" href="style.css?v=10005">
 
 </head>
 
@@ -16,6 +16,16 @@
 <h2>Trapezium Generator (mm)</h2>
 
 <div class="controls panel">
+
+  <!-- Type moved to first position -->
+  <label>Type:
+    <select id="type">
+      <option value="regular">Regular</option>
+      <option value="right">Right</option>
+      <option value="irregular">Irregular</option>
+    </select>
+  </label>
+
   <label>A (Height):
     <input id="A" type="number" value="100" min="100" max="2440" onclick="this.select()">
     <div class="range">Min 100 mm — Max 2440 mm</div>
@@ -36,15 +46,8 @@
     <div class="range">0 mm — Max <span id="DmaxLabel">0</span> mm</div>
   </label>
 
-  <label>Type:
-    <select id="type">
-      <option value="regular">Regular</option>
-      <option value="right">Right</option>
-      <option value="irregular">Irregular</option>
-    </select>
-  </label>
+  <!-- Draw button removed -->
 
-  <button onclick="drawTrapezium()">Draw</button>
 </div>
 
 <h3>Edge Banding</h3>
@@ -65,11 +68,12 @@
   <button onclick="downloadDXF()">Download DXF</button>
 </div>
 
+<!-- Canvas background will be updated in CSS -->
 <canvas id="canvas" width="900" height="600"></canvas>
 
 </div>
 
-<div id="versionLabel">v1.3.7</div>
+<div id="versionLabel">v1.3.8</div>
 
 <script src="script.js"></script>
 </body>
