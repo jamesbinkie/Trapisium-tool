@@ -33,3 +33,13 @@ canvas {
   border: 1px solid #000;
   background: #fff;
 }
+
+#versionLabel {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  font-size: 14px;
+  color: #666;
+  opacity: 0.7;
+  user-select: none;
+}
