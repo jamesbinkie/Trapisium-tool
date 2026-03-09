@@ -41,10 +41,11 @@ function drawTrapezium() {
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  const scale = 1; // 1 mm = 1 pixel (adjust if needed)
-  const offsetX = 50;
-  const offsetY = 50;
+  const scale = 1; // 1 mm = 1 pixel
+  const offsetX = 100;
+  const offsetY = 100;
 
+  // Draw trapezium outline
   ctx.beginPath();
   ctx.moveTo(pts[0][0] * scale + offsetX, pts[0][1] * scale + offsetY);
 
@@ -56,6 +57,91 @@ function drawTrapezium() {
   ctx.lineWidth = 3;
   ctx.strokeStyle = "#000";
   ctx.stroke();
+
+  // Draw dimensions
+  drawDimensions(ctx, pts, scale, offsetX, offsetY, A, B, C);
+}
+
+function drawDimensions(ctx, pts, scale, offsetX, offsetY, A, B, C) {
+  ctx.strokeStyle = "#000";
+  ctx.fillStyle = "#000";
+  ctx.lineWidth = 1.5;
+  ctx.font = "16px Arial";
+
+  // Extract points
+  const TL = pts[0];
+  const TR = pts[1];
+  const BR = pts[2];
+  const BL = pts[3];
+
+  // --- TOP WIDTH (A) ---
+  const topY = TL[1] * scale + offsetY - 20;
+
+  drawDimLine(ctx,
+    TL[0] * scale + offsetX,
+    topY,
+    TR[0] * scale + offsetX,
+    topY,
+    `${A} mm`
+  );
+
+  // --- BOTTOM WIDTH (B) ---
+  const bottomY = BL[1] * scale + offsetY + 40;
+
+  drawDimLine(ctx,
+    BL[0] * scale + offsetX,
+    bottomY,
+    BR[0] * scale + offsetX,
+    bottomY,
+    `${B} mm`
+  );
+
+  // --- HEIGHT (C) ---
+  const leftX = BL[0] * scale + offsetX - 40;
+
+  drawDimLine(ctx,
+    leftX,
+    TL[1] * scale + offsetY,
+    leftX,
+    BL[1] * scale + offsetY,
+    `${C} mm`
+  );
+}
+
+function drawDimLine(ctx, x1, y1, x2, y2, label) {
+  // Draw main dimension line
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+
+  // Draw arrowheads
+  drawArrow(ctx, x1, y1, x2, y2);
+  drawArrow(ctx, x2, y2, x1, y1);
+
+  // Draw label at midpoint
+  const midX = (x1 + x2) / 2;
+  const midY = (y1 + y2) / 2;
+
+  ctx.fillText(label, midX + 5, midY - 5);
+}
+
+function drawArrow(ctx, x1, y1, x2, y2) {
+  const angle = Math.atan2(y2 - y1, x2 - x1);
+  const size = 8;
+
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(
+    x1 + size * Math.cos(angle + Math.PI / 6),
+    y1 + size * Math.sin(angle + Math.PI / 6)
+  );
+  ctx.lineTo(
+    x1 + size * Math.cos(angle - Math.PI / 6),
+    y1 + size * Math.sin(angle - Math.PI / 6)
+  );
+  ctx.closePath();
+  ctx.fill();
 }
 
 function downloadPNG() {
