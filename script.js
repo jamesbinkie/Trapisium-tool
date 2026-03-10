@@ -236,35 +236,61 @@ function drawArrow(ctx, x1, y1, x2, y2) {
 // EDGE BANDING
 // -------------------------------
 
-function computeOffsetEdges(pts, scale, offsetX, offsetY, offsetPx) {
+function computeOffsetPolygon(pts, scale, offsetX, offsetY, offsetPx) {
+  // Compute centroid to know "outside" direction
+  const cx = pts.reduce((sum,p)=>sum+p[0],0)/pts.length;
+  const cy = pts.reduce((sum,p)=>sum+p[1],0)/pts.length;
+
   const edges = [];
 
   for (let i = 0; i < pts.length; i++) {
     const p1 = pts[i];
-    const p2 = pts[(i + 1) % pts.length];
+    const p2 = pts[(i+1) % pts.length];
 
-    const x1 = p1[0] * scale + offsetX;
-    const y1 = p1[1] * scale + offsetY;
-    const x2 = p2[0] * scale + offsetX;
-    const y2 = p2[1] * scale + offsetY;
+    const x1 = p1[0]*scale + offsetX;
+    const y1 = p1[1]*scale + offsetY;
+    const x2 = p2[0]*scale + offsetX;
+    const y2 = p2[1]*scale + offsetY;
 
     const dx = x2 - x1;
     const dy = y2 - y1;
-    const len = Math.sqrt(dx * dx + dy * dy);
+    const len = Math.sqrt(dx*dx + dy*dy);
 
-    // OUTSIDE normal (flip sign compared to inside)
-    const nx = -dy / len;  // negative dy
-    const ny = dx / len;   // positive dx
+    // Perpendicular normal
+    let nx = -dy/len;
+    let ny = dx/len;
+
+    // Determine if normal points outward: test centroid
+    const midX = (x1 + x2)/2;
+    const midY = (y1 + y2)/2;
+    const testX = midX + nx*10;
+    const testY = midY + ny*10;
+
+    // If test point is closer to centroid, flip normal
+    const distToCentroidBefore = Math.hypot(midX-cx, midY-cy);
+    const distToCentroidAfter = Math.hypot(testX-cx, testY-cy);
+    if (distToCentroidAfter < distToCentroidBefore) {
+      nx = -nx;
+      ny = -ny;
+    }
 
     edges.push({
-      x1: x1 + nx * offsetPx,
-      y1: y1 + ny * offsetPx,
-      x2: x2 + nx * offsetPx,
-      y2: y2 + ny * offsetPx
+      x1: x1 + nx*offsetPx,
+      y1: y1 + ny*offsetPx,
+      x2: x2 + nx*offsetPx,
+      y2: y2 + ny*offsetPx
     });
   }
 
-  return edges;
+  // Now compute intersection points for polygon
+  const poly = [];
+  for (let i = 0; i < edges.length; i++) {
+    const e1 = edges[i];
+    const e2 = edges[(i+1)%edges.length];
+    poly.push(intersectLines(e1,e2));
+  }
+
+  return poly;
 }
 
 
