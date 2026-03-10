@@ -174,22 +174,40 @@ function drawDimensions(ctx, pts, scale, offsetX, offsetY) {
     "below"
   );
 
-  // Left (height) — always vertical, matching top/bottom offset spacing
+  // Left or right (height) — choose side dynamically
+  const TLs = TL[0] * scale + offsetX;
+  const TRs = TR[0] * scale + offsetX;
+  const BLs = BL[0] * scale + offsetX;
+  const BRs = BR[0] * scale + offsetX;
+  
+  const shapeLeft = Math.min(TLs, BLs);
+  const shapeRight = Math.max(TRs, BRs);
+  
   const scaleFactor = ctx.canvas.width / 900;
-  const dimOffset = 20 * scaleFactor; // same as top/bottom line offset
+  const dimOffset = 20 * scaleFactor;
   
-  const dimX = Math.min(
-    TL[0] * scale + offsetX,
-    BL[0] * scale + offsetX
-  ) - dimOffset;
+  // Distances to canvas edges
+  const spaceLeft = shapeLeft; 
+  const spaceRight = ctx.canvas.width - shapeRight;
   
+  // Choose side with more space
+  let dimX;
+  let position = "left";
+  
+  if (spaceRight > spaceLeft) {
+    dimX = shapeRight + dimOffset;
+    position = "right";
+  } else {
+    dimX = shapeLeft - dimOffset;
+    position = "left";
+  }
   
   drawDimLine(
     ctx,
     dimX, TL[1] * scale + offsetY,
     dimX, BL[1] * scale + offsetY,
     `${Number((BL[1] - TL[1]).toFixed(2))} mm`,
-    "left"
+    position
   );
 }
 
