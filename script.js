@@ -367,13 +367,16 @@ function downloadPNG() {
   tempCanvas.width = exportW;
   tempCanvas.height = exportH;
 
-  // Transparent background for accurate bounding box detection
-  const tctx = tempCanvas.getContext("2d");
-  tctx.clearRect(0, 0, exportW, exportH);
+  // Force a large export margin so text never clips
+  const margin = window.__EXPORT_MARGIN_OVERRIDE__ || 150;
+  window.__EXPORT_MARGIN_OVERRIDE__ = 800; // <--- NEW: 800px margin for export
 
   drawTrapezium(tempCanvas);
 
-  // --- PASS 2: Detect bounding box of actual drawn pixels ---
+  // Restore normal margin for on-screen drawing
+  window.__EXPORT_MARGIN_OVERRIDE__ = originalMargin;
+
+  // --- PASS 2: Detect bounding box ---
   const bbox = getCanvasBoundingBox(tempCanvas);
 
   // --- PASS 3: Add 10% padding ---
@@ -388,7 +391,7 @@ function downloadPNG() {
   finalCanvas.height = finalH;
   const fctx = finalCanvas.getContext("2d");
 
-  // Background (same as your visualiser)
+  // Background
   fctx.fillStyle = "#f3efe3";
   fctx.fillRect(0, 0, finalW, finalH);
 
@@ -398,6 +401,13 @@ function downloadPNG() {
     bbox.x, bbox.y, bbox.w, bbox.h,
     padX, padY, bbox.w, bbox.h
   );
+
+  // --- EXPORT ---
+  const link = document.createElement("a");
+  link.download = name + ".png";
+  link.href = finalCanvas.toDataURL("image/png");
+  link.click();
+}
 
   // --- EXPORT ---
   const link = document.createElement("a");
