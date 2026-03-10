@@ -297,7 +297,7 @@ function drawArrow(ctx, x1, y1, x2, y2) {
 
 
 // -------------------------------
-// PERFECT-CORNER EDGE BANDING
+// PERFECT-CORNER EDGE BANDING (FIXED)
 // -------------------------------
 
 function computeOffsetEdges(pts, scale, offsetX, offsetY, offsetPx) {
@@ -316,6 +316,9 @@ function computeOffsetEdges(pts, scale, offsetX, offsetY, offsetPx) {
     const dy = y2 - y1;
     const len = Math.sqrt(dx * dx + dy * dy);
 
+    if (len === 0) return null;
+
+    // outward normal
     const nx = dy / len;
     const ny = -dx / len;
 
@@ -336,22 +339,42 @@ function intersectLines(e1, e2) {
   const x3 = e2.x1, y3 = e2.y1;
   const x4 = e2.x2, y4 = e2.y2;
 
-  const denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+  const denom =
+    (x1 - x2) * (y3 - y4) -
+    (y1 - y2) * (x3 - x4);
+
   if (denom === 0) return { x: x2, y: y2 };
 
   const px =
     ((x1 * y2 - y1 * x2) * (x3 - x4) -
-     (x1 - x2) * (x3 * y4 - y3 * x4)) / denom;
+      (x1 - x2) * (x3 * y4 - y3 * x4)) /
+    denom;
 
   const py =
     ((x1 * y2 - y1 * x2) * (y3 - y4) -
-     (y1 - y2) * (x3 * y4 - y3 * x4)) / denom;
+      (y1 - y2) * (x3 * y4 - y3 * x4)) /
+    denom;
 
   return { x: px, y: py };
 }
 
-function computeOffsetPolygon(pts, scale, offsetX, offsetY, offsetPx) {
-  const edges = computeOffsetEdges(pts, scale, offsetX, offsetY, offsetPx);
+function computeOffsetPolygon(
+  pts,
+  scale,
+  offsetX,
+  offsetY,
+  offsetPx
+) {
+  const edges = computeOffsetEdges(
+    pts,
+    scale,
+    offsetX,
+    offsetY,
+    offsetPx
+  );
+
+  if (!edges) return null;
+
   const joined = [];
 
   for (let i = 0; i < edges.length; i++) {
@@ -370,45 +393,59 @@ function computeOffsetPolygon(pts, scale, offsetX, offsetY, offsetPx) {
 
 function drawBanding(ctx, pts, scale, offsetX, offsetY) {
   const offsetPx = 12;
-  const poly = computeOffsetPolygon(pts, scale, offsetX, offsetY, offsetPx);
 
-  if (!poly || poly.length !== 4 || poly.some(p => !p)) return;
+  const poly = computeOffsetPolygon(
+    pts,
+    scale,
+    offsetX,
+    offsetY,
+    offsetPx
+  );
+
+  if (!poly || poly.length !== 4) return;
 
   ctx.strokeStyle = "red";
   ctx.lineWidth = 3;
 
-  // TOP: poly[3] → poly[0]
-  if (document.getElementById("bandTop").checked) {
-    ctx.beginPath();
-    ctx.moveTo(poly[3].x, poly[3].y);
-    ctx.lineTo(poly[0].x, poly[0].y);
-    ctx.stroke();
-  }
+  // pts order:
+  // 0 top-left
+  // 1 top-right
+  // 2 bottom-right
+  // 3 bottom-left
 
-  // RIGHT: poly[0] → poly[1]
-  if (document.getElementById("bandRight").checked) {
+  // TOP
+  if (document.getElementById("bandTop").checked) {
     ctx.beginPath();
     ctx.moveTo(poly[0].x, poly[0].y);
     ctx.lineTo(poly[1].x, poly[1].y);
     ctx.stroke();
   }
 
-  // BOTTOM: poly[1] → poly[2]
-  if (document.getElementById("bandBottom").checked) {
+  // RIGHT
+  if (document.getElementById("bandRight").checked) {
     ctx.beginPath();
     ctx.moveTo(poly[1].x, poly[1].y);
     ctx.lineTo(poly[2].x, poly[2].y);
     ctx.stroke();
   }
 
-  // LEFT: poly[2] → poly[3]
-  if (document.getElementById("bandLeft").checked) {
+  // BOTTOM
+  if (document.getElementById("bandBottom").checked) {
     ctx.beginPath();
     ctx.moveTo(poly[2].x, poly[2].y);
     ctx.lineTo(poly[3].x, poly[3].y);
     ctx.stroke();
   }
+
+  // LEFT
+  if (document.getElementById("bandLeft").checked) {
+    ctx.beginPath();
+    ctx.moveTo(poly[3].x, poly[3].y);
+    ctx.lineTo(poly[0].x, poly[0].y);
+    ctx.stroke();
+  }
 }
+
 
 
 // -------------------------------
