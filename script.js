@@ -174,11 +174,15 @@ function drawDimensions(ctx, pts, scale, offsetX, offsetY) {
     "below"
   );
 
-  // Left (height) — always vertical
+  // Left (height) — always vertical, matching top/bottom offset spacing
+  const scaleFactor = ctx.canvas.width / 900;
+  const dimOffset = 20 * scaleFactor; // same as top/bottom line offset
+  
   const dimX = Math.min(
     TL[0] * scale + offsetX,
     BL[0] * scale + offsetX
-  ) - 40 * (ctx.canvas.width / 900); // fixed offset to the left
+  ) - dimOffset;
+  
   
   drawDimLine(
     ctx,
