@@ -151,27 +151,30 @@ function drawDimensions(ctx, pts, scale, offsetX, offsetY, A, B, C) {
   const TL = pts[0], TR = pts[1], BR = pts[2], BL = pts[3];
   ctx.font = "16px Arial";
 
-  // Top: label above the line
+  const lineOffset = 20; // space between shape and dimension line
+
+  // Top: move line above the shape
   drawDimLine(ctx,
-              TL[0]*scale+offsetX, TL[1]*scale+offsetY,
-              TR[0]*scale+offsetX, TR[1]*scale+offsetY,
+              TL[0]*scale+offsetX, TL[1]*scale+offsetY - lineOffset,
+              TR[0]*scale+offsetX, TR[1]*scale+offsetY - lineOffset,
               C + " mm",
               "above");
 
-  // Bottom: label below the line
+  // Bottom: move line below the shape
   drawDimLine(ctx,
-              BL[0]*scale+offsetX, BL[1]*scale+offsetY,
-              BR[0]*scale+offsetX, BR[1]*scale+offsetY,
+              BL[0]*scale+offsetX, BL[1]*scale+offsetY + lineOffset,
+              BR[0]*scale+offsetX, BR[1]*scale+offsetY + lineOffset,
               B + " mm",
               "below");
 
-  // Left: label left of line (unchanged)
+  // Left: move line to the left of the shape
   drawDimLine(ctx,
-              BL[0]*scale+offsetX, TL[1]*scale+offsetY,
-              BL[0]*scale+offsetX, BL[1]*scale+offsetY,
+              BL[0]*scale+offsetX - lineOffset, TL[1]*scale+offsetY,
+              BL[0]*scale+offsetX - lineOffset, BL[1]*scale+offsetY,
               A + " mm",
               "left");
 }
+
 
 
 function drawDimLine(ctx, x1, y1, x2, y2, label, position) {
@@ -198,9 +201,9 @@ function drawDimLine(ctx, x1, y1, x2, y2, label, position) {
     // horizontal line
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    if (position === "above") ctx.fillText(label, midX, midY - 20);
-    else if (position === "below") ctx.fillText(label, midX, midY + 20);
-    else ctx.fillText(label, midX, midY - 20); // default
+    if (position === "above") ctx.fillText(label, midX, midY - 10); // move label above the line
+    else if (position === "below") ctx.fillText(label, midX, midY + 10); // below line
+    else ctx.fillText(label, midX, midY - 10); // default
   }
 }
 
