@@ -8,7 +8,6 @@ function setupInputs() {
   const C = document.getElementById("C");
   const D = document.getElementById("D");
   const type = document.getElementById("type");
-  const Dlabel = document.getElementById("Dlabel");
 
   function clampOnBlur(input, min, max) {
     input.addEventListener("blur", () => {
@@ -68,14 +67,9 @@ function setupInputs() {
   });
 
   // Type change toggles D visibility
-  // UPDATED: use flex so layout matches other inputs, and hide when not irregular
   type.addEventListener("change", () => {
-    if (type.value === "irregular") {
-      Dlabel.style.display = "flex";
-      Dlabel.style.flexDirection = "column";
-    } else {
-      Dlabel.style.display = "none";
-    }
+    const Dlabel = document.getElementById("Dlabel");
+    Dlabel.style.display = type.value === "irregular" ? "inline-block" : "none";
     updateDynamicLimits();
     drawTrapezium();
   });
@@ -83,32 +77,11 @@ function setupInputs() {
   // B affects C and D max values
   B.addEventListener("input", () => {
     updateDynamicLimits();
+    drawTrapezium();
   });
 
   updateDynamicLimits();
-
-  // Initial D visibility on load
-  if (type.value === "irregular") {
-    Dlabel.style.display = "flex";
-    Dlabel.style.flexDirection = "column";
-  } else {
-    Dlabel.style.display = "none";
-  }
-}
-
-function updateDynamicLimits() {
-  const Bv = Number(document.getElementById("B").value);
-  const C = document.getElementById("C");
-  const D = document.getElementById("D");
-
-  // Update C max
-  const maxC = Math.max(20, Bv - 1);
-  document.getElementById("CmaxLabel").textContent = maxC;
-
-  // Update D max
-  const Cv = Number(C.value);
-  const maxD = Math.max(0, Bv - Cv);
-  document.getElementById("DmaxLabel").textContent = maxD;
+  drawTrapezium();
 }
 
 function clamp(value, min, max) {
@@ -117,38 +90,45 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
+// SINGLE, CORRECT VERSION
 function updateDynamicLimits() {
   const Bv = Number(document.getElementById("B").value);
-  const Cv = Number(document.getElementById("C").value);
   const C = document.getElementById("C");
   const D = document.getElementById("D");
+  const Cv = Number(C.value);
 
+  // C max
   const maxC = Math.max(20, Bv - 1);
   C.max = maxC;
-  
-  // clamp to new min 20
-  if (Cv < 20) C.value = 20;
-  if (Cv > maxC) C.value = maxC;
-  
+
+  // clamp C to [20, maxC]
+  if (isNaN(Cv) || C.value === "") {
+    C.value = 20;
+  } else if (Cv < 20) {
+    C.value = 20;
+  } else if (Cv > maxC) {
+    C.value = maxC;
+  }
+
   document.getElementById("CmaxLabel").textContent = maxC;
 
+  // D max depends on B and C
   const maxD = Math.max(0, Bv - Number(C.value || 0));
   D.max = maxD;
-  if (Number(D.value) > maxD) D.value = maxD;
+
+  const Dv = Number(D.value);
+  if (isNaN(Dv) || D.value === "") {
+    D.value = 0;
+  } else if (Dv < 0) {
+    D.value = 0;
+  } else if (Dv > maxD) {
+    D.value = maxD;
+  }
+
   document.getElementById("DmaxLabel").textContent = maxD;
 }
 
-function clamp(value, min, max) {
-  value = Number(value);
-  if (isNaN(value)) return min;
-  return Math.min(Math.max(value, min), max);
-}
-
-// UPDATED: draw a shape by default when the page loads
-window.onload = function () {
-  setupInputs();
-  drawTrapezium();
-};
+window.onload = setupInputs;
 
 
 // -------------------------------
@@ -242,13 +222,34 @@ function drawDimensions(ctx, pts, scale, offsetX, offsetY, A, B, C) {
   const BL = pts[3];
 
   const topY = Math.min(TL[1], TR[1]) * scale + offsetY - 30;
-  drawDimLine(ctx, TL[0] * scale + offsetX, topY, TR[0] * scale + offsetX, topY, `${C} mm`);
+  drawDimLine(
+    ctx,
+    TL[0] * scale + offsetX,
+    topY,
+    TR[0] * scale + offsetX,
+    topY,
+    `${C} mm`
+  );
 
   const bottomY = Math.max(BL[1], BR[1]) * scale + offsetY + 40;
-  drawDimLine(ctx, BL[0] * scale + offsetX, bottomY, BR[0] * scale + offsetX, bottomY, `${B} mm`);
+  drawDimLine(
+    ctx,
+    BL[0] * scale + offsetX,
+    bottomY,
+    BR[0] * scale + offsetX,
+    bottomY,
+    `${B} mm`
+  );
 
   const leftX = Math.min(TL[0], BL[0]) * scale + offsetX - 40;
-  drawDimLine(ctx, leftX, TL[1] * scale + offsetY, leftX, BL[1] * scale + offsetY, `${A} mm`);
+  drawDimLine(
+    ctx,
+    leftX,
+    TL[1] * scale + offsetY,
+    leftX,
+    BL[1] * scale + offsetY,
+    `${A} mm`
+  );
 }
 
 function drawDimLine(ctx, x1, y1, x2, y2, label) {
@@ -263,19 +264,16 @@ function drawDimLine(ctx, x1, y1, x2, y2, label) {
   const midX = (x1 + x2) / 2;
   const midY = (y1 + y2) / 2;
 
-  // Center text
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
-  // Detect vertical vs horizontal
   const isVertical = Math.abs(x1 - x2) < 1;
 
   if (isVertical) {
-    // Move label to the opposite side of the line
-    const offset = -20; 
+    const offset = -20; // move to opposite side of the vertical line
     ctx.fillText(label, midX + offset, midY);
   } else {
-    ctx.fillText(label, midX, midY - 20);
+    ctx.fillText(label, midX, midY - 20); // above horizontal line
   }
 }
 
@@ -285,8 +283,14 @@ function drawArrow(ctx, x1, y1, x2, y2) {
 
   ctx.beginPath();
   ctx.moveTo(x1, y1);
-  ctx.lineTo(x1 + size * Math.cos(angle + Math.PI / 6), y1 + size * Math.sin(angle + Math.PI / 6));
-  ctx.lineTo(x1 + size * Math.cos(angle - Math.PI / 6), y1 + size * Math.sin(angle - Math.PI / 6));
+  ctx.lineTo(
+    x1 + size * Math.cos(angle + Math.PI / 6),
+    y1 + size * Math.sin(angle + Math.PI / 6)
+  );
+  ctx.lineTo(
+    x1 + size * Math.cos(angle - Math.PI / 6),
+    y1 + size * Math.sin(angle - Math.PI / 6)
+  );
   ctx.closePath();
   ctx.fill();
 }
@@ -356,7 +360,6 @@ function computeOffsetPolygon(pts, scale, offsetX, offsetY, offsetPx) {
 
     const p = intersectLines(e1, e2);
 
-    // Guard against invalid intersections
     if (!p || isNaN(p.x) || isNaN(p.y)) return null;
 
     joined.push(p);
@@ -367,10 +370,8 @@ function computeOffsetPolygon(pts, scale, offsetX, offsetY, offsetPx) {
 
 function drawBanding(ctx, pts, scale, offsetX, offsetY) {
   const offsetPx = 12;
-
   const poly = computeOffsetPolygon(pts, scale, offsetX, offsetY, offsetPx);
 
-  // Safety guard — prevents invisible banding if any point is undefined
   if (!poly || poly.length !== 4 || poly.some(p => !p)) return;
 
   ctx.strokeStyle = "red";
@@ -401,31 +402,6 @@ function drawBanding(ctx, pts, scale, offsetX, offsetY) {
   }
 
   // LEFT: poly[2] → poly[3]
-  if (document.getElementById("bandLeft").checked) {
-    ctx.beginPath();
-    ctx.moveTo(poly[2].x, poly[2].y);
-    ctx.lineTo(poly[3].x, poly[3].y);
-    ctx.stroke();
-  }
-}
-
-  // poly[0] → poly[1] = RIGHT
-  if (document.getElementById("bandRight").checked) {
-    ctx.beginPath();
-    ctx.moveTo(poly[0].x, poly[0].y);
-    ctx.lineTo(poly[1].x, poly[1].y);
-    ctx.stroke();
-  }
-
-  // poly[1] → poly[2] = BOTTOM
-  if (document.getElementById("bandBottom").checked) {
-    ctx.beginPath();
-    ctx.moveTo(poly[1].x, poly[1].y);
-    ctx.lineTo(poly[2].x, poly[2].y);
-    ctx.stroke();
-  }
-
-  // poly[2] → poly[3] = LEFT
   if (document.getElementById("bandLeft").checked) {
     ctx.beginPath();
     ctx.moveTo(poly[2].x, poly[2].y);
@@ -488,7 +464,6 @@ function downloadDXF() {
     ];
   }
 
-  // Flip Y axis for DXF (CAD uses Y-up)
   const maxY = Math.max(...pts.map(p => p[1]));
 
   let dxf = "";
