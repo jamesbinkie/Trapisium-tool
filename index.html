@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <title>Trapezium Generator</title>
 
-  <!-- Guaranteed CSS load with cache-buster -->
-  <link rel="stylesheet" href="style.css?v=10006">
+  <!-- CSS with cache-buster -->
+  <link rel="stylesheet" href="style.css?v=10007">
 
 </head>
 
@@ -44,7 +44,7 @@
     <div class="range">Min 20 mm — Max <span id="CmaxLabel">49</span> mm</div>
   </label>
 
-  <!-- D (Offset) — hidden by default -->
+  <!-- D -->
   <label id="Dlabel">
     D (Offset):
     <input id="D" type="number" value="0" min="0" onclick="this.select()">
@@ -73,30 +73,44 @@
 
 </div>
 
-<!-- Canvas with soft blue-cream background -->
 <canvas id="canvas" width="900" height="600"></canvas>
 
 </div>
 
-<div id="versionLabel">v1.3.9</div>
+<div id="versionLabel">v1.4.0</div>
 
 <script src="script.js"></script>
 
 <script>
-/* Ensure D Offset is hidden on load */
+
+/* Hide D on load */
 document.getElementById("Dlabel").style.display = "none";
 
-/* Type change logic */
+/* Type change */
 document.getElementById("type").addEventListener("change", function () {
+
   const type = this.value;
   const Dlabel = document.getElementById("Dlabel");
 
   if (type === "irregular") {
-    Dlabel.style.display = "flex";   // matches other inputs
+    Dlabel.style.display = "flex";
   } else {
     Dlabel.style.display = "none";
   }
+
+  drawTrapezium();
 });
+
+
+/* redraw when banding toggled */
+document
+  .querySelectorAll("#bandTop, #bandRight, #bandBottom, #bandLeft")
+  .forEach(cb => {
+    cb.addEventListener("change", function () {
+      drawTrapezium();
+    });
+  });
+
 </script>
 
 </body>
