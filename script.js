@@ -90,7 +90,6 @@ window.onload = setupInputs;
 
 // -------------------------------
 // DRAWING
-// -------------------------------
 
 function drawTrapezium() {
   const type = document.getElementById("type").value;
@@ -127,6 +126,7 @@ function drawTrapezium() {
   const offsetX = (canvas.width-shapeWidth*scale)/2 - minX*scale;
   const offsetY = (canvas.height-shapeHeight*scale)/2 - minY*scale;
 
+  // Draw trapezium
   ctx.beginPath();
   ctx.moveTo(pts[0][0]*scale+offsetX, pts[0][1]*scale+offsetY);
   for (let i=1;i<pts.length;i++){
@@ -144,30 +144,28 @@ function drawTrapezium() {
 // -------------------------------
 // DIMENSIONS
 
-function drawDimensions(ctx, pts, scale, offsetX, offsetY, A, B, C) {
+function drawDimensions(ctx, pts, scale, offsetX, offsetY) {
   const TL = pts[0], TR = pts[1], BR = pts[2], BL = pts[3];
 
-  // Top
-  drawDimLine(ctx, TL[0]*scale+offsetX, TL[1]*scale+offsetY, TR[0]*scale+offsetX, TR[1]*scale+offsetY, `${C} mm`, "above");
-  // Bottom
-  drawDimLine(ctx, BL[0]*scale+offsetX, BL[1]*scale+offsetY, BR[0]*scale+offsetX, BR[1]*scale+offsetY, `${B} mm`, "below");
-  // Left
-  drawDimLine(ctx, TL[0]*scale+offsetX, TL[1]*scale+offsetY, BL[0]*scale+offsetX, BL[1]*scale+offsetY, `${A} mm`, "left");
+  // Top (above), Bottom (below), Left (left)
+  drawDimLine(ctx, TL[0]*scale+offsetX, TL[1]*scale+offsetY, TR[0]*scale+offsetX, TR[1]*scale+offsetY, `${Number(TR[0]-TL[0])} mm`, "above");
+  drawDimLine(ctx, BL[0]*scale+offsetX, BL[1]*scale+offsetY, BR[0]*scale+offsetX, BR[1]*scale+offsetY, `${Number(BR[0]-BL[0])} mm`, "below");
+  drawDimLine(ctx, TL[0]*scale+offsetX, TL[1]*scale+offsetY, BL[0]*scale+offsetX, BL[1]*scale+offsetY, `${Number(BL[1]-TL[1])} mm`, "left");
 }
 
-// Draw single dimension line with arrows
 function drawDimLine(ctx, x1, y1, x2, y2, label, position) {
   ctx.beginPath();
   ctx.moveTo(x1, y1);
   ctx.lineTo(x2, y2);
   ctx.stroke();
+
   drawArrow(ctx, x1, y1, x2, y2);
   drawArrow(ctx, x2, y2, x1, y1);
 
-  const midX = (x1 + x2) / 2;
-  const midY = (y1 + y2) / 2;
+  const midX = (x1+x2)/2;
+  const midY = (y1+y2)/2;
+  const padding = 14;
 
-  const padding = 10;
   ctx.textAlign = position==="left"?"right":"center";
   ctx.textBaseline = position==="below"?"top":"middle";
 
@@ -196,12 +194,12 @@ function drawArrow(ctx, x1, y1, x2, y2) {
 }
 
 // -------------------------------
-// EDGE BANDING (outside trapezium)
+// EDGE BANDING
 
 function drawBanding(ctx, pts, scale, offsetX, offsetY) {
   const offsetPx = 12;
-  if(!pts || pts.length!==4) return;
 
+  // Compute centroid to push points outside
   const cx = (pts[0][0]+pts[1][0]+pts[2][0]+pts[3][0])/4;
   const cy = (pts[0][1]+pts[1][1]+pts[2][1]+pts[3][1])/4;
 
@@ -215,10 +213,10 @@ function drawBanding(ctx, pts, scale, offsetX, offsetY) {
   ctx.strokeStyle="red";
   ctx.lineWidth=3;
 
-  if(document.getElementById("bandTop").checked){ctx.beginPath();ctx.moveTo(offsetPts[0].x,offsetPts[0].y);ctx.lineTo(offsetPts[1].x,offsetPts[1].y);ctx.stroke();}
-  if(document.getElementById("bandRight").checked){ctx.beginPath();ctx.moveTo(offsetPts[1].x,offsetPts[1].y);ctx.lineTo(offsetPts[2].x,offsetPts[2].y);ctx.stroke();}
-  if(document.getElementById("bandBottom").checked){ctx.beginPath();ctx.moveTo(offsetPts[2].x,offsetPts[2].y);ctx.lineTo(offsetPts[3].x,offsetPts[3].y);ctx.stroke();}
-  if(document.getElementById("bandLeft").checked){ctx.beginPath();ctx.moveTo(offsetPts[3].x,offsetPts[3].y);ctx.lineTo(offsetPts[0].x,offsetPts[0].y);ctx.stroke();}
+  if(document.getElementById("bandTop").checked){ctx.beginPath(); ctx.moveTo(offsetPts[0].x,offsetPts[0].y); ctx.lineTo(offsetPts[1].x,offsetPts[1].y); ctx.stroke();}
+  if(document.getElementById("bandRight").checked){ctx.beginPath(); ctx.moveTo(offsetPts[1].x,offsetPts[1].y); ctx.lineTo(offsetPts[2].x,offsetPts[2].y); ctx.stroke();}
+  if(document.getElementById("bandBottom").checked){ctx.beginPath(); ctx.moveTo(offsetPts[2].x,offsetPts[2].y); ctx.lineTo(offsetPts[3].x,offsetPts[3].y); ctx.stroke();}
+  if(document.getElementById("bandLeft").checked){ctx.beginPath(); ctx.moveTo(offsetPts[3].x,offsetPts[3].y); ctx.lineTo(offsetPts[0].x,offsetPts[0].y); ctx.stroke();}
 }
 
 // -------------------------------
