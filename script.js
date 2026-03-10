@@ -224,37 +224,40 @@ function drawBanding(ctx, pts, scale, offsetX, offsetY){
 
 // Correct side mapping
 
-  // Top = TL → TR
-  if(bandTop){
+// draw sides with corrected index rotation
+
+  // Top
+  if (bandTop) {
+    ctx.beginPath();
+    ctx.moveTo(poly[3].x, poly[3].y);
+    ctx.lineTo(poly[0].x, poly[0].y);
+    ctx.stroke();
+  }
+  
+  // Right
+  if (bandRight) {
     ctx.beginPath();
     ctx.moveTo(poly[0].x, poly[0].y);
     ctx.lineTo(poly[1].x, poly[1].y);
     ctx.stroke();
   }
   
-  // Right = TR → BR
-  if(bandRight){
+  // Bottom
+  if (bandBottom) {
     ctx.beginPath();
     ctx.moveTo(poly[1].x, poly[1].y);
     ctx.lineTo(poly[2].x, poly[2].y);
     ctx.stroke();
   }
   
-  // Bottom = BR → BL
-  if(bandBottom){
+  // Left
+  if (bandLeft) {
     ctx.beginPath();
     ctx.moveTo(poly[2].x, poly[2].y);
     ctx.lineTo(poly[3].x, poly[3].y);
     ctx.stroke();
   }
-  
-  // Left = BL → TL
-  if(bandLeft){
-    ctx.beginPath();
-    ctx.moveTo(poly[3].x, poly[3].y);
-    ctx.lineTo(poly[0].x, poly[0].y);
-    ctx.stroke();
-  }
+
 
 }
 
