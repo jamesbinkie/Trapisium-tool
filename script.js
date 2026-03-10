@@ -122,7 +122,7 @@ function drawTrapezium(targetCanvas = null) {
   const minY = Math.min(...ys), maxY = Math.max(...ys);
   const shapeWidth = maxX - minX, shapeHeight = maxY - minY;
 
-  const margin = 150;
+  const margin = Math.max(150, canvas.height * 0.25);
   const safeShapeWidth = shapeWidth === 0 ? 1 : shapeWidth;
   const safeShapeHeight = shapeHeight === 0 ? 1 : shapeHeight;
 
