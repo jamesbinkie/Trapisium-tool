@@ -359,7 +359,7 @@ function intersectLines(e1,e2){
 function downloadPNG() {
   const name = document.getElementById("fileName").value || "trapezium";
 
-  // --- 1. Render at full 4K resolution ---
+  // --- PASS 1: Render at 4K on a transparent canvas ---
   const exportW = 4096;
   const exportH = 4096;
 
@@ -367,15 +367,18 @@ function downloadPNG() {
   tempCanvas.width = exportW;
   tempCanvas.height = exportH;
 
-  // Draw the trapezium at 4K
+  // Transparent background for accurate bounding box detection
+  const tctx = tempCanvas.getContext("2d");
+  tctx.clearRect(0, 0, exportW, exportH);
+
   drawTrapezium(tempCanvas);
 
-  // --- 2. Detect the bounding box of all non‑transparent pixels ---
+  // --- PASS 2: Detect bounding box of actual drawn pixels ---
   const bbox = getCanvasBoundingBox(tempCanvas);
 
-  // --- 3. Add 10% padding around the bounding box ---
-  const padX = Math.round((bbox.w) * 0.10);
-  const padY = Math.round((bbox.h) * 0.10);
+  // --- PASS 3: Add 10% padding ---
+  const padX = Math.round(bbox.w * 0.10);
+  const padY = Math.round(bbox.h * 0.10);
 
   const finalW = bbox.w + padX * 2;
   const finalH = bbox.h + padY * 2;
@@ -389,14 +392,14 @@ function downloadPNG() {
   fctx.fillStyle = "#f3efe3";
   fctx.fillRect(0, 0, finalW, finalH);
 
-  // --- 4. Copy the cropped region with padding ---
+  // Copy cropped region with padding
   fctx.drawImage(
     tempCanvas,
-    bbox.x, bbox.y, bbox.w, bbox.h,   // source rect
-    padX, padY, bbox.w, bbox.h        // destination rect
+    bbox.x, bbox.y, bbox.w, bbox.h,
+    padX, padY, bbox.w, bbox.h
   );
 
-  // --- 5. Export PNG ---
+  // --- EXPORT ---
   const link = document.createElement("a");
   link.download = name + ".png";
   link.href = finalCanvas.toDataURL("image/png");
