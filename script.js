@@ -21,23 +21,22 @@ function setupInputs() {
   clampOnBlur(A, 100, 2440);
   clampOnBlur(B, 50, 1220);
 
+  // C - smooth typing, clamp only on blur
   C.addEventListener("blur", () => {
-    const Bv = Number(B.value);
-    const maxC = Math.max(20, Bv - 1);
+    const maxC = Math.max(20, Number(B.value) - 1);
     let val = Number(C.value);
-    if (isNaN(val) || C.value === "") val = 20;
+    if (isNaN(val) || val === "") val = 20;
     val = Math.max(20, Math.min(val, maxC));
     C.value = val;
     updateDynamicLimits();
     drawTrapezium();
   });
 
+  // D - smooth typing, clamp only on blur
   D.addEventListener("blur", () => {
-    const Bv = Number(B.value);
-    const Cv = Number(C.value);
-    const maxD = Math.max(0, Bv - Cv);
+    const maxD = Math.max(0, Number(B.value) - Number(C.value));
     let val = Number(D.value);
-    if (isNaN(val) || D.value === "") val = 0;
+    if (isNaN(val) || val === "") val = 0;
     val = Math.max(0, Math.min(val, maxD));
     D.value = val;
     updateDynamicLimits();
@@ -75,17 +74,15 @@ function updateDynamicLimits() {
   const D = document.getElementById("D");
 
   const maxC = Math.max(20, Bv - 1);
-  C.max = maxC;
   let Cv = Number(C.value);
-  if (isNaN(Cv) || C.value === "") Cv = 20;
+  if (isNaN(Cv) || Cv === "") Cv = 20;
   Cv = Math.max(20, Math.min(Cv, maxC));
   C.value = Cv;
   document.getElementById("CmaxLabel").textContent = maxC;
 
   const maxD = Math.max(0, Bv - Cv);
-  D.max = maxD;
   let Dv = Number(D.value);
-  if (isNaN(Dv) || D.value === "") Dv = 0;
+  if (isNaN(Dv) || Dv === "") Dv = 0;
   Dv = Math.max(0, Math.min(Dv, maxD));
   D.value = Dv;
   document.getElementById("DmaxLabel").textContent = maxD;
@@ -94,7 +91,7 @@ function updateDynamicLimits() {
 window.onload = setupInputs;
 
 // -------------------------------
-// DRAWING + DIMENSIONS
+// DRAWING
 // -------------------------------
 
 function drawTrapezium() {
@@ -122,19 +119,19 @@ function drawTrapezium() {
   const ys = pts.map(p=>p[1]);
   const minX = Math.min(...xs), maxX=Math.max(...xs);
   const minY = Math.min(...ys), maxY=Math.max(...ys);
-  const shapeWidth = maxX-minX, shapeHeight=maxY-minY;
+  const shapeWidth = maxX-minX, shapeHeight = maxY-minY;
 
   const margin = 150;
   const scaleX = (canvas.width-margin*2)/shapeWidth;
   const scaleY = (canvas.height-margin*2)/shapeHeight;
-  const scale = Math.min(scaleX,scaleY);
+  const scale = Math.min(scaleX, scaleY);
 
   const offsetX = (canvas.width-shapeWidth*scale)/2 - minX*scale;
   const offsetY = (canvas.height-shapeHeight*scale)/2 - minY*scale;
 
   ctx.beginPath();
   ctx.moveTo(pts[0][0]*scale+offsetX, pts[0][1]*scale+offsetY);
-  for(let i=1;i<pts.length;i++) {
+  for (let i=1;i<pts.length;i++){
     ctx.lineTo(pts[i][0]*scale+offsetX, pts[i][1]*scale+offsetY);
   }
   ctx.closePath();
@@ -151,8 +148,8 @@ function drawTrapezium() {
 // -------------------------------
 
 function drawDimensions(ctx, pts, scale, offsetX, offsetY, A, B, C) {
-  ctx.font="16px Arial";
   const TL=pts[0], TR=pts[1], BR=pts[2], BL=pts[3];
+  ctx.font="16px Arial";
 
   // Top
   drawDimLine(ctx, TL[0]*scale+offsetX, TL[1]*scale+offsetY-30,
@@ -170,7 +167,7 @@ function drawDimensions(ctx, pts, scale, offsetX, offsetY, A, B, C) {
                    A+" mm");
 }
 
-function drawDimLine(ctx, x1, y1, x2, y2, label) {
+function drawDimLine(ctx,x1,y1,x2,y2,label){
   ctx.beginPath();
   ctx.moveTo(x1,y1);
   ctx.lineTo(x2,y2);
@@ -185,16 +182,14 @@ function drawDimLine(ctx, x1, y1, x2, y2, label) {
   const padding = 10;
   const textWidth = ctx.measureText(label).width;
 
-  if(isVertical){
+  if (isVertical){
     ctx.textAlign="right";
     ctx.textBaseline="middle";
     ctx.fillText(label, midX-padding-textWidth*0.1, midY);
   } else {
     ctx.textAlign="center";
     ctx.textBaseline="middle";
-    const canvasMid = document.getElementById("canvas").height/2;
-    if(midY>canvasMid) ctx.fillText(label, midX, midY+20);
-    else ctx.fillText(label, midX, midY-20);
+    ctx.fillText(label, midX, y1<y2 ? midY-20 : midY+20);
   }
 }
 
@@ -249,7 +244,7 @@ function computeOffsetPolygon(pts, scale, offsetX, offsetY, offsetPx){
 function drawBanding(ctx, pts, scale, offsetX, offsetY){
   const offsetPx=12;
   const poly=computeOffsetPolygon(pts,scale,offsetX,offsetY,offsetPx);
-  if(!poly) return;
+  if(!poly || poly.length!==4) return;
   const bandTop=document.getElementById("bandTop");
   const bandRight=document.getElementById("bandRight");
   const bandBottom=document.getElementById("bandBottom");
