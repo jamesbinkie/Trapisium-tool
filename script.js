@@ -21,7 +21,6 @@ function setupInputs() {
   clampOnBlur(A, 100, 2440);
   clampOnBlur(B, 50, 1220);
 
-  // C - smooth typing, clamp only on blur
   C.addEventListener("blur", () => {
     const maxC = Math.max(20, Number(B.value) - 1);
     let val = Number(C.value);
@@ -32,7 +31,6 @@ function setupInputs() {
     drawTrapezium();
   });
 
-  // D - smooth typing, clamp only on blur
   D.addEventListener("blur", () => {
     const maxD = Math.max(0, Number(B.value) - Number(C.value));
     let val = Number(D.value);
@@ -82,7 +80,7 @@ function updateDynamicLimits() {
 
   const maxD = Math.max(0, Bv - Cv);
   let Dv = Number(D.value);
-  if (isNaN(Dv) || Dv === "") Dv = 0;
+  if (isNaN(Dv) || D.value === "") Dv = 0;
   Dv = Math.max(0, Math.min(Dv, maxD));
   D.value = Dv;
   document.getElementById("DmaxLabel").textContent = maxD;
@@ -145,23 +143,19 @@ function drawTrapezium() {
 
 // -------------------------------
 // DIMENSIONS
-// -------------------------------
 
-function computeOffsetPolygon(pts, scale, offsetX, offsetY, offsetPx) {
-  const edges = computeOffsetEdges(pts, scale, offsetX, offsetY, offsetPx);
-  const poly = [];
+function drawDimensions(ctx, pts, scale, offsetX, offsetY, A, B, C) {
+  const TL = pts[0], TR = pts[1], BR = pts[2], BL = pts[3];
 
-  for (let i = 0; i < edges.length; i++) {
-    const e1 = edges[i];
-    const e2 = edges[(i + 1) % edges.length];
-    poly.push(intersectLines(e1, e2));
-  }
-
-  return poly;
+  // Top
+  drawDimLine(ctx, TL[0]*scale+offsetX, TL[1]*scale+offsetY, TR[0]*scale+offsetX, TR[1]*scale+offsetY, `${C} mm`, "above");
+  // Bottom
+  drawDimLine(ctx, BL[0]*scale+offsetX, BL[1]*scale+offsetY, BR[0]*scale+offsetX, BR[1]*scale+offsetY, `${B} mm`, "below");
+  // Left
+  drawDimLine(ctx, TL[0]*scale+offsetX, TL[1]*scale+offsetY, BL[0]*scale+offsetX, BL[1]*scale+offsetY, `${A} mm`, "left");
 }
 
-
-
+// Draw single dimension line with arrows
 function drawDimLine(ctx, x1, y1, x2, y2, label, position) {
   ctx.beginPath();
   ctx.moveTo(x1, y1);
@@ -173,151 +167,62 @@ function drawDimLine(ctx, x1, y1, x2, y2, label, position) {
   const midX = (x1 + x2) / 2;
   const midY = (y1 + y2) / 2;
 
-  const isVertical = Math.abs(x1 - x2) < 1;
   const padding = 10;
-  const textWidth = ctx.measureText(label).width;
+  ctx.textAlign = position==="left"?"right":"center";
+  ctx.textBaseline = position==="below"?"top":"middle";
 
-  if (isVertical) {
-    // left of vertical line
-    ctx.textAlign = "right";
-    ctx.textBaseline = "middle";
-    ctx.fillText(label, midX - padding - textWidth*0.1, midY);
-  } else {
-    // horizontal line
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    if (position === "above") ctx.fillText(label, midX, midY - 10); // move label above the line
-    else if (position === "below") ctx.fillText(label, midX, midY + 10); // below line
-    else ctx.fillText(label, midX, midY - 10); // default
-  }
+  let textX = midX, textY = midY;
+  if(position==="above") textY -= padding;
+  else if(position==="below") textY += padding;
+  else if(position==="left") textX -= padding;
+
+  ctx.fillText(label, textX, textY);
 }
-
 
 function drawArrow(ctx, x1, y1, x2, y2) {
   const angle = Math.atan2(y2 - y1, x2 - x1);
-  const size = 8;           // arrowhead size
-  const arrowOffset = 6;    // how far past the line the arrow tip sticks out
+  const size = 8;
+  const arrowOffset = 6;
 
-  // Move the tip slightly past the line end
   const tipX = x2 + arrowOffset * Math.cos(angle);
   const tipY = y2 + arrowOffset * Math.sin(angle);
 
   ctx.beginPath();
   ctx.moveTo(tipX, tipY);
-  ctx.lineTo(
-    tipX - size * Math.cos(angle - Math.PI / 6),
-    tipY - size * Math.sin(angle - Math.PI / 6)
-  );
-  ctx.lineTo(
-    tipX - size * Math.cos(angle + Math.PI / 6),
-    tipY - size * Math.sin(angle + Math.PI / 6)
-  );
+  ctx.lineTo(tipX - size * Math.cos(angle - Math.PI/6), tipY - size * Math.sin(angle - Math.PI/6));
+  ctx.lineTo(tipX - size * Math.cos(angle + Math.PI/6), tipY - size * Math.sin(angle + Math.PI/6));
   ctx.closePath();
   ctx.fill();
 }
 
-
 // -------------------------------
-// EDGE BANDING
-// -------------------------------
+// EDGE BANDING (outside trapezium)
 
-function computeOffsetPolygon(pts, scale, offsetX, offsetY, offsetPx) {
-  // Compute centroid to know "outside" direction
-  const cx = pts.reduce((sum,p)=>sum+p[0],0)/pts.length;
-  const cy = pts.reduce((sum,p)=>sum+p[1],0)/pts.length;
+function drawBanding(ctx, pts, scale, offsetX, offsetY) {
+  const offsetPx = 12;
+  if(!pts || pts.length!==4) return;
 
-  const edges = [];
+  const cx = (pts[0][0]+pts[1][0]+pts[2][0]+pts[3][0])/4;
+  const cy = (pts[0][1]+pts[1][1]+pts[2][1]+pts[3][1])/4;
 
-  for (let i = 0; i < pts.length; i++) {
-    const p1 = pts[i];
-    const p2 = pts[(i+1) % pts.length];
+  const offsetPts = pts.map(p=>{
+    const dx = p[0]-cx;
+    const dy = p[1]-cy;
+    const len = Math.sqrt(dx*dx+dy*dy)||1;
+    return {x: p[0]*scale+offsetX+(dx/len)*offsetPx, y: p[1]*scale+offsetY+(dy/len)*offsetPx};
+  });
 
-    const x1 = p1[0]*scale + offsetX;
-    const y1 = p1[1]*scale + offsetY;
-    const x2 = p2[0]*scale + offsetX;
-    const y2 = p2[1]*scale + offsetY;
-
-    const dx = x2 - x1;
-    const dy = y2 - y1;
-    const len = Math.sqrt(dx*dx + dy*dy);
-
-    // Perpendicular normal
-    let nx = -dy/len;
-    let ny = dx/len;
-
-    // Determine if normal points outward: test centroid
-    const midX = (x1 + x2)/2;
-    const midY = (y1 + y2)/2;
-    const testX = midX + nx*10;
-    const testY = midY + ny*10;
-
-    // If test point is closer to centroid, flip normal
-    const distToCentroidBefore = Math.hypot(midX-cx, midY-cy);
-    const distToCentroidAfter = Math.hypot(testX-cx, testY-cy);
-    if (distToCentroidAfter < distToCentroidBefore) {
-      nx = -nx;
-      ny = -ny;
-    }
-
-    edges.push({
-      x1: x1 + nx*offsetPx,
-      y1: y1 + ny*offsetPx,
-      x2: x2 + nx*offsetPx,
-      y2: y2 + ny*offsetPx
-    });
-  }
-
-  // Now compute intersection points for polygon
-  const poly = [];
-  for (let i = 0; i < edges.length; i++) {
-    const e1 = edges[i];
-    const e2 = edges[(i+1)%edges.length];
-    poly.push(intersectLines(e1,e2));
-  }
-
-  return poly;
-}
-
-
-function intersectLines(e1,e2){
-  const {x1:x1,y1:y1,x2:x2,y2:y2}=e1;
-  const {x1:x3,y1:y3,x2:x4,y2:y4}=e2;
-  const denom=(x1-x2)*(y3-y4)-(y1-y2)*(x3-x4);
-  if(denom===0) return {x:x2,y:y2};
-  const px=((x1*y2-y1*x2)*(x3-x4)-(x1-x2)*(x3*y4-y3*x4))/denom;
-  const py=((x1*y2-y1*x2)*(y3-y4)-(y1-y2)*(x3*y4-y3*x4))/denom;
-  return {x:px,y:py};
-}
-
-function computeOffsetPolygon(pts, scale, offsetX, offsetY, offsetPx){
-  const edges=computeOffsetEdges(pts,scale,offsetX,offsetY,offsetPx);
-  const poly=[];
-  for(let i=0;i<edges.length;i++){
-    const e1=edges[i], e2=edges[(i+1)%edges.length];
-    poly.push(intersectLines(e1,e2));
-  }
-  return poly;
-}
-
-function drawBanding(ctx, pts, scale, offsetX, offsetY){
-  const offsetPx=12;
-  const poly=computeOffsetPolygon(pts,scale,offsetX,offsetY,offsetPx);
-  if(!poly || poly.length!==4) return;
-  const bandTop=document.getElementById("bandTop");
-  const bandRight=document.getElementById("bandRight");
-  const bandBottom=document.getElementById("bandBottom");
-  const bandLeft=document.getElementById("bandLeft");
   ctx.strokeStyle="red";
   ctx.lineWidth=3;
-  if(bandTop.checked){ctx.beginPath();ctx.moveTo(poly[0].x,poly[0].y);ctx.lineTo(poly[1].x,poly[1].y);ctx.stroke();}
-  if(bandRight.checked){ctx.beginPath();ctx.moveTo(poly[1].x,poly[1].y);ctx.lineTo(poly[2].x,poly[2].y);ctx.stroke();}
-  if(bandBottom.checked){ctx.beginPath();ctx.moveTo(poly[2].x,poly[2].y);ctx.lineTo(poly[3].x,poly[3].y);ctx.stroke();}
-  if(bandLeft.checked){ctx.beginPath();ctx.moveTo(poly[3].x,poly[3].y);ctx.lineTo(poly[0].x,poly[0].y);ctx.stroke();}
+
+  if(document.getElementById("bandTop").checked){ctx.beginPath();ctx.moveTo(offsetPts[0].x,offsetPts[0].y);ctx.lineTo(offsetPts[1].x,offsetPts[1].y);ctx.stroke();}
+  if(document.getElementById("bandRight").checked){ctx.beginPath();ctx.moveTo(offsetPts[1].x,offsetPts[1].y);ctx.lineTo(offsetPts[2].x,offsetPts[2].y);ctx.stroke();}
+  if(document.getElementById("bandBottom").checked){ctx.beginPath();ctx.moveTo(offsetPts[2].x,offsetPts[2].y);ctx.lineTo(offsetPts[3].x,offsetPts[3].y);ctx.stroke();}
+  if(document.getElementById("bandLeft").checked){ctx.beginPath();ctx.moveTo(offsetPts[3].x,offsetPts[3].y);ctx.lineTo(offsetPts[0].x,offsetPts[0].y);ctx.stroke();}
 }
 
 // -------------------------------
 // EXPORT FUNCTIONS
-// -------------------------------
 
 function downloadPNG(){
   const canvas=document.getElementById("canvas");
@@ -351,10 +256,12 @@ function downloadDXF(){
   dxf+="0\nENDTAB\n0\nENDSEC\n";
   dxf+="0\nSECTION\n2\nENTITIES\n";
   dxf+="0\nLWPOLYLINE\n100\nAcDbPolyline\n90\n4\n70\n1\n8\n0\n";
+
   pts.forEach(p=>{
     const x=p[0], y=maxY-p[1];
     dxf+=`10\n${x}\n20\n${y}\n`;
   });
+
   dxf+="0\nENDSEC\n0\nEOF";
 
   const blob=new Blob([dxf], {type:"application/dxf"});
