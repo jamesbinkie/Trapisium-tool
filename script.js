@@ -148,50 +148,62 @@ function drawTrapezium() {
 // -------------------------------
 
 function drawDimensions(ctx, pts, scale, offsetX, offsetY, A, B, C) {
-  const TL=pts[0], TR=pts[1], BR=pts[2], BL=pts[3];
-  ctx.font="16px Arial";
+  const TL = pts[0], TR = pts[1], BR = pts[2], BL = pts[3];
+  ctx.font = "16px Arial";
 
-  // Top
-  drawDimLine(ctx, TL[0]*scale+offsetX, TL[1]*scale+offsetY-30,
-                   TR[0]*scale+offsetX, TR[1]*scale+offsetY-30,
-                   C+" mm");
+  // Top: label above the line
+  drawDimLine(ctx,
+              TL[0]*scale+offsetX, TL[1]*scale+offsetY,
+              TR[0]*scale+offsetX, TR[1]*scale+offsetY,
+              C + " mm",
+              "above");
 
-  // Bottom
-  drawDimLine(ctx, BL[0]*scale+offsetX, BL[1]*scale+offsetY+40,
-                   BR[0]*scale+offsetX, BR[1]*scale+offsetY+40,
-                   B+" mm");
+  // Bottom: label below the line
+  drawDimLine(ctx,
+              BL[0]*scale+offsetX, BL[1]*scale+offsetY,
+              BR[0]*scale+offsetX, BR[1]*scale+offsetY,
+              B + " mm",
+              "below");
 
-  // Left
-  drawDimLine(ctx, BL[0]*scale+offsetX-40, TL[1]*scale+offsetY,
-                   BL[0]*scale+offsetX-40, BL[1]*scale+offsetY,
-                   A+" mm");
+  // Left: label left of line (unchanged)
+  drawDimLine(ctx,
+              BL[0]*scale+offsetX, TL[1]*scale+offsetY,
+              BL[0]*scale+offsetX, BL[1]*scale+offsetY,
+              A + " mm",
+              "left");
 }
 
-function drawDimLine(ctx,x1,y1,x2,y2,label){
+
+function drawDimLine(ctx, x1, y1, x2, y2, label, position) {
   ctx.beginPath();
-  ctx.moveTo(x1,y1);
-  ctx.lineTo(x2,y2);
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
   ctx.stroke();
-  drawArrow(ctx,x1,y1,x2,y2);
-  drawArrow(ctx,x2,y2,x1,y1);
+  drawArrow(ctx, x1, y1, x2, y2);
+  drawArrow(ctx, x2, y2, x1, y1);
 
-  const midX = (x1+x2)/2;
-  const midY = (y1+y2)/2;
+  const midX = (x1 + x2) / 2;
+  const midY = (y1 + y2) / 2;
 
-  const isVertical = Math.abs(x1-x2)<1;
+  const isVertical = Math.abs(x1 - x2) < 1;
   const padding = 10;
   const textWidth = ctx.measureText(label).width;
 
-  if (isVertical){
-    ctx.textAlign="right";
-    ctx.textBaseline="middle";
-    ctx.fillText(label, midX-padding-textWidth*0.1, midY);
+  if (isVertical) {
+    // left of vertical line
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    ctx.fillText(label, midX - padding - textWidth*0.1, midY);
   } else {
-    ctx.textAlign="center";
-    ctx.textBaseline="middle";
-    ctx.fillText(label, midX, y1<y2 ? midY-20 : midY+20);
+    // horizontal line
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    if (position === "above") ctx.fillText(label, midX, midY - 20);
+    else if (position === "below") ctx.fillText(label, midX, midY + 20);
+    else ctx.fillText(label, midX, midY - 20); // default
   }
 }
+
 
 function drawArrow(ctx,x1,y1,x2,y2){
   const angle=Math.atan2(y2-y1,x2-x1);
