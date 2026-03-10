@@ -89,9 +89,13 @@ function updateDynamicLimits() {
 window.onload = setupInputs;
 
 // -------------------------------
-// DRAWING
+// DRAWING (now accepts an optional canvas for exporting)
+// -------------------------------
 
-function drawTrapezium() {
+function drawTrapezium(targetCanvas = null) {
+  const canvas = targetCanvas || document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+
   const type = document.getElementById("type").value;
   const A = Number(document.getElementById("A").value);
   const B = Number(document.getElementById("B").value);
@@ -108,10 +112,10 @@ function drawTrapezium() {
     pts = [[D,0],[D+C,0],[B,A],[0,A]];
   }
 
-  const canvas = document.getElementById("canvas");
-  const ctx = canvas.getContext("2d");
+  // clear
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
+  // compute extents & scale
   const xs = pts.map(p=>p[0]);
   const ys = pts.map(p=>p[1]);
   const minX = Math.min(...xs), maxX=Math.max(...xs);
@@ -119,46 +123,70 @@ function drawTrapezium() {
   const shapeWidth = maxX-minX, shapeHeight = maxY-minY;
 
   const margin = 150;
-  const scaleX = (canvas.width-margin*2)/shapeWidth;
-  const scaleY = (canvas.height-margin*2)/shapeHeight;
+  // protect against degenerate shapes
+  const safeShapeWidth = shapeWidth === 0 ? 1 : shapeWidth;
+  const safeShapeHeight = shapeHeight === 0 ? 1 : shapeHeight;
+
+  const scaleX = (canvas.width - margin*2) / safeShapeWidth;
+  const scaleY = (canvas.height - margin*2) / safeShapeHeight;
   const scale = Math.min(scaleX, scaleY);
 
-  const offsetX = (canvas.width-shapeWidth*scale)/2 - minX*scale;
-  const offsetY = (canvas.height-shapeHeight*scale)/2 - minY*scale;
+  const offsetX = (canvas.width - safeShapeWidth * scale)/2 - minX*scale;
+  const offsetY = (canvas.height - safeShapeHeight * scale)/2 - minY*scale;
 
-  // Draw trapezium
+  // draw trapezium
   ctx.beginPath();
-  ctx.moveTo(pts[0][0]*scale+offsetX, pts[0][1]*scale+offsetY);
+  ctx.moveTo(pts[0][0]*scale + offsetX, pts[0][1]*scale + offsetY);
   for (let i=1;i<pts.length;i++){
-    ctx.lineTo(pts[i][0]*scale+offsetX, pts[i][1]*scale+offsetY);
+    ctx.lineTo(pts[i][0]*scale + offsetX, pts[i][1]*scale + offsetY);
   }
   ctx.closePath();
-  ctx.lineWidth=3;
-  ctx.strokeStyle="#000";
+  ctx.lineWidth = Math.max(2, 3 * (ctx.canvas.width / 900)); // make stroke scale a bit
+  ctx.strokeStyle = "#000";
   ctx.stroke();
 
-  drawDimensions(ctx, pts, scale, offsetX, offsetY, A, B, C);
+  // draw dimensions and banding using same ctx & computed transforms
+  drawDimensions(ctx, pts, scale, offsetX, offsetY);
   drawBanding(ctx, pts, scale, offsetX, offsetY);
 }
 
 // -------------------------------
 // DIMENSIONS
+// -------------------------------
 
 function drawDimensions(ctx, pts, scale, offsetX, offsetY) {
   const TL = pts[0], TR = pts[1], BR = pts[2], BL = pts[3];
 
-  drawDimLine(ctx, TL[0]*scale+offsetX, TL[1]*scale+offsetY, TR[0]*scale+offsetX, TR[1]*scale+offsetY, `${Number(TR[0]-TL[0])} mm`, "above");
-  drawDimLine(ctx, BL[0]*scale+offsetX, BL[1]*scale+offsetY, BR[0]*scale+offsetX, BR[1]*scale+offsetY, `${Number(BR[0]-BL[0])} mm`, "below");
-  drawDimLine(ctx, TL[0]*scale+offsetX, TL[1]*scale+offsetY, BL[0]*scale+offsetX, BL[1]*scale+offsetY, `${Number(BL[1]-TL[1])} mm`, "left");
+  // Top (above), Bottom (below), Left (left)
+  drawDimLine(ctx,
+    TL[0]*scale+offsetX, TL[1]*scale+offsetY,
+    TR[0]*scale+offsetX, TR[1]*scale+offsetY,
+    `${Number((TR[0]-TL[0]).toFixed(2))} mm`,
+    "above"
+  );
+
+  drawDimLine(ctx,
+    BL[0]*scale+offsetX, BL[1]*scale+offsetY,
+    BR[0]*scale+offsetX, BR[1]*scale+offsetY,
+    `${Number((BR[0]-BL[0]).toFixed(2))} mm`,
+    "below"
+  );
+
+  drawDimLine(ctx,
+    TL[0]*scale+offsetX, TL[1]*scale+offsetY,
+    BL[0]*scale+offsetX, BL[1]*scale+offsetY,
+    `${Number((BL[1]-TL[1]).toFixed(2))} mm`,
+    "left"
+  );
 }
 
 function drawDimLine(ctx, x1, y1, x2, y2, label, position) {
+  // scale factor based on canvas width to keep proportions similar
   const scaleFactor = ctx.canvas.width / 900;
-  const offset = 20 * scaleFactor;
-  const textOffset = 10 * scaleFactor;
-  const scaleFactor = ctx.canvas.width / 900; 
-  ctx.font = (18 * scaleFactor) + "px Arial";
 
+  const offset = 20 * scaleFactor;      // how far the dim line sits from the shape edge
+  const textOffset = 12 * scaleFactor;  // distance of text from dimension line
+  ctx.font = Math.max(10, 18 * scaleFactor) + "px Arial";
 
   let lineX1 = x1, lineY1 = y1;
   let lineX2 = x2, lineY2 = y2;
@@ -167,14 +195,19 @@ function drawDimLine(ctx, x1, y1, x2, y2, label, position) {
   else if (position === "below") { lineY1 += offset; lineY2 += offset; }
   else if (position === "left") { lineX1 -= offset; lineX2 -= offset; }
 
+  // Draw the dimension line
   ctx.beginPath();
   ctx.moveTo(lineX1, lineY1);
   ctx.lineTo(lineX2, lineY2);
+  ctx.strokeStyle = "#000";
+  ctx.lineWidth = Math.max(1, 1.2 * scaleFactor);
   ctx.stroke();
 
+  // Draw arrows
   drawArrow(ctx, lineX1, lineY1, lineX2, lineY2);
   drawArrow(ctx, lineX2, lineY2, lineX1, lineY1);
 
+  // Label
   const midX = (lineX1 + lineX2) / 2;
   const midY = (lineY1 + lineY2) / 2;
 
@@ -188,15 +221,17 @@ function drawDimLine(ctx, x1, y1, x2, y2, label, position) {
   else if (position === "below") textY += textOffset;
   else if (position === "left") textX -= textOffset;
 
+  ctx.fillStyle = "#000";
   ctx.fillText(label, textX, textY);
 }
 
 function drawArrow(ctx, x1, y1, x2, y2) {
-  const angle = Math.atan2(y2 - y1, x2 - x1);
+  // arrow scales with canvas width
   const scaleFactor = ctx.canvas.width / 900;
   const size = 8 * scaleFactor;
   const arrowOffset = 6 * scaleFactor;
 
+  const angle = Math.atan2(y2 - y1, x2 - x1);
 
   const tipX = x2 + arrowOffset * Math.cos(angle);
   const tipY = y2 + arrowOffset * Math.sin(angle);
@@ -206,18 +241,20 @@ function drawArrow(ctx, x1, y1, x2, y2) {
   ctx.lineTo(tipX - size * Math.cos(angle - Math.PI/6), tipY - size * Math.sin(angle - Math.PI/6));
   ctx.lineTo(tipX - size * Math.cos(angle + Math.PI/6), tipY - size * Math.sin(angle + Math.PI/6));
   ctx.closePath();
+  ctx.fillStyle = "#000";
   ctx.fill();
 }
 
 // -------------------------------
-// EDGE BANDING (clean, consistent)
-function drawBanding(ctx, pts, scale, offsetX, offsetY){
-  // Offset amount proportional to canvas, but min 12px
-  const offsetPx = Math.max(12, Math.min(ctx.canvas.width, ctx.canvas.height)/100);
+// EDGE BANDING (clean, consistent outline)
+// -------------------------------
 
-  // Compute offset polygon
+function drawBanding(ctx, pts, scale, offsetX, offsetY){
+  // Offset amount proportional to canvas, but minimum 8px
+  const offsetPx = Math.max(8, Math.min(ctx.canvas.width, ctx.canvas.height) / 120);
+
   const poly = computeOffsetPolygonEdges(pts, scale, offsetX, offsetY, offsetPx);
-  if(!poly || poly.length!==4) return;
+  if(!poly || poly.length !== 4) return;
 
   const bandTop = document.getElementById("bandTop").checked;
   const bandRight = document.getElementById("bandRight").checked;
@@ -225,45 +262,38 @@ function drawBanding(ctx, pts, scale, offsetX, offsetY){
   const bandLeft = document.getElementById("bandLeft").checked;
 
   ctx.strokeStyle = "red";
-  ctx.lineWidth = 3;
+  ctx.lineWidth = Math.max(2, 3 * (ctx.canvas.width / 900));
 
-// Correct side mapping
-
-// draw sides with corrected index rotation
-
-  // Top
+  // This mapping assumes poly[] corners come in the same circular order as the shape.
+  // In previous versions the polygon order ended up rotated; this mapping
+  // was chosen to match the rendered trapezium correctly.
   if (bandTop) {
     ctx.beginPath();
     ctx.moveTo(poly[3].x, poly[3].y);
     ctx.lineTo(poly[0].x, poly[0].y);
     ctx.stroke();
   }
-  
-  // Right
+
   if (bandRight) {
     ctx.beginPath();
     ctx.moveTo(poly[0].x, poly[0].y);
     ctx.lineTo(poly[1].x, poly[1].y);
     ctx.stroke();
   }
-  
-  // Bottom
+
   if (bandBottom) {
     ctx.beginPath();
     ctx.moveTo(poly[1].x, poly[1].y);
     ctx.lineTo(poly[2].x, poly[2].y);
     ctx.stroke();
   }
-  
-  // Left
+
   if (bandLeft) {
     ctx.beginPath();
     ctx.moveTo(poly[2].x, poly[2].y);
     ctx.lineTo(poly[3].x, poly[3].y);
     ctx.stroke();
   }
-
-
 }
 
 // Compute offset polygon by offsetting edges along normals and intersecting
@@ -283,19 +313,24 @@ function computeOffsetPolygonEdges(pts, scale, offsetX, offsetY, offsetPx){
     const dx = x2 - x1;
     const dy = y2 - y1;
     const len = Math.sqrt(dx*dx + dy*dy) || 1;
-    let nx = -dy/len;
-    let ny = dx/len;
+    let nx = -dy / len;
+    let ny = dx / len;
 
     // Determine outward normal by testing against centroid
-    const midX = (x1+x2)/2;
-    const midY = (y1+y2)/2;
-    const cx = pts.reduce((sum,p)=>sum+p[0],0)/n*scale + offsetX;
-    const cy = pts.reduce((sum,p)=>sum+p[1],0)/n*scale + offsetY;
-    const testX = midX + nx*10;
-    const testY = midY + ny*10;
-    if(Math.hypot(testX-cx,testY-cy) < Math.hypot(midX-cx,midY-cy)){ nx=-nx; ny=-ny; }
+    const midX = (x1 + x2) / 2;
+    const midY = (y1 + y2) / 2;
+    const cx = pts.reduce((sum,p)=>sum+p[0],0) / n * scale + offsetX;
+    const cy = pts.reduce((sum,p)=>sum+p[1],0) / n * scale + offsetY;
+    const testX = midX + nx * 10;
+    const testY = midY + ny * 10;
+    if (Math.hypot(testX - cx, testY - cy) < Math.hypot(midX - cx, midY - cy)) { nx = -nx; ny = -ny; }
 
-    edges.push({x1:x1+nx*offsetPx, y1:y1+ny*offsetPx, x2:x2+nx*offsetPx, y2:y2+ny*offsetPx});
+    edges.push({
+      x1: x1 + nx*offsetPx,
+      y1: y1 + ny*offsetPx,
+      x2: x2 + nx*offsetPx,
+      y2: y2 + ny*offsetPx
+    });
   }
 
   // Intersect adjacent edges to get polygon corners
@@ -308,65 +343,60 @@ function computeOffsetPolygonEdges(pts, scale, offsetX, offsetY, offsetPx){
 
 // Line intersection utility
 function intersectLines(e1,e2){
-  const {x1,y1,x2,y2}=e1;
-  const {x1:x3,y1:y3,x2:x4,y2:y4}=e2;
-  const denom=(x1-x2)*(y3-y4)-(y1-y2)*(x3-x4);
-  if(denom===0) return {x:x2,y:y2};
-  const px=((x1*y2-y1*x2)*(x3-x4)-(x1-x2)*(x3*y4-y3*x4))/denom;
-  const py=((x1*y2-y1*x2)*(y3-y4)-(y1-y2)*(x3*y4-y3*x4))/denom;
-  return {x:px,y:py};
+  const {x1,y1,x2,y2} = e1;
+  const {x1:x3,y1:y3,x2:x4,y2:y4} = e2;
+  const denom = (x1-x2)*(y3-y4) - (y1-y2)*(x3-x4);
+  if (denom === 0) return {x:x2, y:y2};
+  const px = ((x1*y2 - y1*x2)*(x3-x4) - (x1-x2)*(x3*y4 - y3*x4)) / denom;
+  const py = ((x1*y2 - y1*x2)*(y3-y4) - (y1-y2)*(x3*y4 - y3*x4)) / denom;
+  return {x:px, y:py};
 }
-
 
 // -------------------------------
 // EXPORT FUNCTIONS
+// -------------------------------
 
 function downloadPNG(){
-
   const name = document.getElementById("fileName").value || "trapezium";
 
-  const canvas = document.getElementById("canvas");
-
-  const oldWidth = canvas.width;
-  const oldHeight = canvas.height;
-
-  // longest side = 4K
+  const screenCanvas = document.getElementById("canvas");
   const maxSize = 4096;
 
-  if (oldWidth > oldHeight) {
-    canvas.width = maxSize;
-    canvas.height = Math.round(maxSize * oldHeight / oldWidth);
+  // compute export w/h preserving aspect ratio of screen canvas
+  let w, h;
+  if (screenCanvas.width >= screenCanvas.height) {
+    w = maxSize;
+    h = Math.round(maxSize * screenCanvas.height / screenCanvas.width);
   } else {
-    canvas.height = maxSize;
-    canvas.width = Math.round(maxSize * oldWidth / oldHeight);
+    h = maxSize;
+    w = Math.round(maxSize * screenCanvas.width / screenCanvas.height);
   }
 
-  drawTrapezium();
+  // draw into a temporary canvas at target resolution using the same renderer
+  const tempCanvas = document.createElement("canvas");
+  tempCanvas.width = w;
+  tempCanvas.height = h;
 
-  const exportCanvas = document.createElement("canvas");
-  exportCanvas.width = canvas.width;
-  exportCanvas.height = canvas.height;
+  // draw trapezium into tempCanvas (drawTrapezium will clear it first)
+  drawTrapezium(tempCanvas);
 
-  const ctx = exportCanvas.getContext("2d");
+  // compose with background so exported PNG has same background
+  const finalCanvas = document.createElement("canvas");
+  finalCanvas.width = w;
+  finalCanvas.height = h;
+  const fctx = finalCanvas.getContext("2d");
 
-  ctx.fillStyle = "#f3efe3";
-  ctx.fillRect(0,0,exportCanvas.width,exportCanvas.height);
+  // change this to match your visualiser background if different
+  fctx.fillStyle = "#f3efe3";
+  fctx.fillRect(0,0,w,h);
 
-  ctx.drawImage(canvas,0,0);
+  fctx.drawImage(tempCanvas, 0, 0);
 
   const link = document.createElement("a");
   link.download = name + ".png";
-  link.href = exportCanvas.toDataURL("image/png");
+  link.href = finalCanvas.toDataURL("image/png");
   link.click();
-
-  canvas.width = oldWidth;
-  canvas.height = oldHeight;
-
-  drawTrapezium();
 }
-
-
-
 
 function downloadDXF(){
   const name=document.getElementById("fileName").value||"trapezium";
