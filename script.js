@@ -263,7 +263,20 @@ function drawDimLine(ctx, x1, y1, x2, y2, label) {
   const midX = (x1 + x2) / 2;
   const midY = (y1 + y2) / 2;
 
-  ctx.fillText(label, midX + 5, midY - 5);
+  // Center text
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  // Detect vertical vs horizontal
+  const isVertical = Math.abs(x1 - x2) < 1;
+
+  if (isVertical) {
+    // Move label to the opposite side of the line
+    const offset = -20; 
+    ctx.fillText(label, midX + offset, midY);
+  } else {
+    ctx.fillText(label, midX, midY - 20);
+  }
 }
 
 function drawArrow(ctx, x1, y1, x2, y2) {
@@ -340,7 +353,13 @@ function computeOffsetPolygon(pts, scale, offsetX, offsetY, offsetPx) {
   for (let i = 0; i < edges.length; i++) {
     const e1 = edges[i];
     const e2 = edges[(i + 1) % edges.length];
-    joined.push(intersectLines(e1, e2));
+
+    const p = intersectLines(e1, e2);
+
+    // Guard against invalid intersections
+    if (!p || isNaN(p.x) || isNaN(p.y)) return null;
+
+    joined.push(p);
   }
 
   return joined;
@@ -348,19 +367,47 @@ function computeOffsetPolygon(pts, scale, offsetX, offsetY, offsetPx) {
 
 function drawBanding(ctx, pts, scale, offsetX, offsetY) {
   const offsetPx = 12;
+
   const poly = computeOffsetPolygon(pts, scale, offsetX, offsetY, offsetPx);
+
+  // Safety guard — prevents invisible banding if any point is undefined
+  if (!poly || poly.length !== 4 || poly.some(p => !p)) return;
 
   ctx.strokeStyle = "red";
   ctx.lineWidth = 3;
 
-  // Correct mapping:
-  // poly[3] → poly[0] = TOP
+  // TOP: poly[3] → poly[0]
   if (document.getElementById("bandTop").checked) {
     ctx.beginPath();
     ctx.moveTo(poly[3].x, poly[3].y);
     ctx.lineTo(poly[0].x, poly[0].y);
     ctx.stroke();
   }
+
+  // RIGHT: poly[0] → poly[1]
+  if (document.getElementById("bandRight").checked) {
+    ctx.beginPath();
+    ctx.moveTo(poly[0].x, poly[0].y);
+    ctx.lineTo(poly[1].x, poly[1].y);
+    ctx.stroke();
+  }
+
+  // BOTTOM: poly[1] → poly[2]
+  if (document.getElementById("bandBottom").checked) {
+    ctx.beginPath();
+    ctx.moveTo(poly[1].x, poly[1].y);
+    ctx.lineTo(poly[2].x, poly[2].y);
+    ctx.stroke();
+  }
+
+  // LEFT: poly[2] → poly[3]
+  if (document.getElementById("bandLeft").checked) {
+    ctx.beginPath();
+    ctx.moveTo(poly[2].x, poly[2].y);
+    ctx.lineTo(poly[3].x, poly[3].y);
+    ctx.stroke();
+  }
+}
 
   // poly[0] → poly[1] = RIGHT
   if (document.getElementById("bandRight").checked) {
