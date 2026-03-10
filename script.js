@@ -154,28 +154,51 @@ function drawDimensions(ctx, pts, scale, offsetX, offsetY) {
 }
 
 function drawDimLine(ctx, x1, y1, x2, y2, label, position) {
+  const offset = 20; // space to push dimension line away from shape
+
+  let lineX1 = x1, lineY1 = y1;
+  let lineX2 = x2, lineY2 = y2;
+
+  // Push horizontal lines above or below the shape
+  if (position === "above") {
+    lineY1 -= offset;
+    lineY2 -= offset;
+  } else if (position === "below") {
+    lineY1 += offset;
+    lineY2 += offset;
+  }
+  // Push vertical line left of the shape
+  else if (position === "left") {
+    lineX1 -= offset;
+    lineX2 -= offset;
+  }
+
+  // Draw the line
   ctx.beginPath();
-  ctx.moveTo(x1, y1);
-  ctx.lineTo(x2, y2);
+  ctx.moveTo(lineX1, lineY1);
+  ctx.lineTo(lineX2, lineY2);
   ctx.stroke();
 
-  drawArrow(ctx, x1, y1, x2, y2);
-  drawArrow(ctx, x2, y2, x1, y1);
+  // Draw arrows at ends
+  drawArrow(ctx, lineX1, lineY1, lineX2, lineY2);
+  drawArrow(ctx, lineX2, lineY2, lineX1, lineY1);
 
-  const midX = (x1+x2)/2;
-  const midY = (y1+y2)/2;
-  const padding = 14;
+  // Draw the label
+  const midX = (lineX1 + lineX2) / 2;
+  const midY = (lineY1 + lineY2) / 2;
+  const padding = 4;
 
-  ctx.textAlign = position==="left"?"right":"center";
-  ctx.textBaseline = position==="below"?"top":"middle";
+  ctx.textAlign = position === "left" ? "right" : "center";
+  ctx.textBaseline = position === "below" ? "top" : "middle";
 
   let textX = midX, textY = midY;
-  if(position==="above") textY -= padding;
-  else if(position==="below") textY += padding;
-  else if(position==="left") textX -= padding;
+  if (position === "above") textY -= padding;
+  else if (position === "below") textY += padding;
+  else if (position === "left") textX -= padding;
 
   ctx.fillText(label, textX, textY);
 }
+
 
 function drawArrow(ctx, x1, y1, x2, y2) {
   const angle = Math.atan2(y2 - y1, x2 - x1);
