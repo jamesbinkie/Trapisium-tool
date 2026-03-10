@@ -222,10 +222,40 @@ function drawBanding(ctx, pts, scale, offsetX, offsetY){
   ctx.strokeStyle = "red";
   ctx.lineWidth = 3;
 
-  if(bandTop){ ctx.beginPath(); ctx.moveTo(poly[0].x,poly[0].y); ctx.lineTo(poly[1].x,poly[1].y); ctx.stroke();}
-  if(bandRight){ ctx.beginPath(); ctx.moveTo(poly[1].x,poly[1].y); ctx.lineTo(poly[2].x,poly[2].y); ctx.stroke();}
-  if(bandBottom){ ctx.beginPath(); ctx.moveTo(poly[2].x,poly[2].y); ctx.lineTo(poly[3].x,poly[3].y); ctx.stroke();}
-  if(bandLeft){ ctx.beginPath(); ctx.moveTo(poly[3].x,poly[3].y); ctx.lineTo(poly[0].x,poly[0].y); ctx.stroke();}
+// Correct side mapping
+
+  // Top = TL → TR
+  if(bandTop){
+    ctx.beginPath();
+    ctx.moveTo(poly[0].x, poly[0].y);
+    ctx.lineTo(poly[1].x, poly[1].y);
+    ctx.stroke();
+  }
+  
+  // Right = TR → BR
+  if(bandRight){
+    ctx.beginPath();
+    ctx.moveTo(poly[1].x, poly[1].y);
+    ctx.lineTo(poly[2].x, poly[2].y);
+    ctx.stroke();
+  }
+  
+  // Bottom = BR → BL
+  if(bandBottom){
+    ctx.beginPath();
+    ctx.moveTo(poly[2].x, poly[2].y);
+    ctx.lineTo(poly[3].x, poly[3].y);
+    ctx.stroke();
+  }
+  
+  // Left = BL → TL
+  if(bandLeft){
+    ctx.beginPath();
+    ctx.moveTo(poly[3].x, poly[3].y);
+    ctx.lineTo(poly[0].x, poly[0].y);
+    ctx.stroke();
+  }
+
 }
 
 // Compute offset polygon by offsetting edges along normals and intersecting
