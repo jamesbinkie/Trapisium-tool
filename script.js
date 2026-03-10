@@ -1,9 +1,8 @@
 // -------------------------------
-// INPUT SETUP
+// INPUT VALIDATION + LIVE LOGIC
 // -------------------------------
 
 function setupInputs() {
-
   const A = document.getElementById("A");
   const B = document.getElementById("B");
   const C = document.getElementById("C");
@@ -11,476 +10,303 @@ function setupInputs() {
   const type = document.getElementById("type");
 
   function clampOnBlur(input, min, max) {
-
     input.addEventListener("blur", () => {
-
       if (input.value === "") input.value = min;
-
       input.value = clamp(input.value, min, max);
-
       updateDynamicLimits();
       drawTrapezium();
-
     });
-
   }
 
   clampOnBlur(A, 100, 2440);
   clampOnBlur(B, 50, 1220);
 
-
   C.addEventListener("blur", () => {
-
     const Bv = Number(B.value);
     const maxC = Math.max(20, Bv - 1);
-
     let val = Number(C.value);
-
-    if (isNaN(val)) val = 20;
-    if (val < 20) val = 20;
-    if (val > maxC) val = maxC;
-
+    if (isNaN(val) || C.value === "") val = 20;
+    val = Math.max(20, Math.min(val, maxC));
     C.value = val;
-
     updateDynamicLimits();
     drawTrapezium();
-
   });
-
 
   D.addEventListener("blur", () => {
-
     const Bv = Number(B.value);
     const Cv = Number(C.value);
-
     const maxD = Math.max(0, Bv - Cv);
-
     let val = Number(D.value);
-
-    if (isNaN(val)) val = 0;
-    if (val < 0) val = 0;
-    if (val > maxD) val = maxD;
-
+    if (isNaN(val) || D.value === "") val = 0;
+    val = Math.max(0, Math.min(val, maxD));
     D.value = val;
-
     updateDynamicLimits();
     drawTrapezium();
-
   });
-
 
   type.addEventListener("change", () => {
-
+    const Dlabel = document.getElementById("Dlabel");
+    Dlabel.style.display = type.value === "irregular" ? "flex" : "none";
     updateDynamicLimits();
     drawTrapezium();
-
   });
 
+  document.querySelectorAll("#bandTop,#bandRight,#bandBottom,#bandLeft")
+    .forEach(cb => cb.addEventListener("change", drawTrapezium));
 
-  document
-    .querySelectorAll(
-      "#bandTop,#bandRight,#bandBottom,#bandLeft"
-    )
-    .forEach(cb =>
-      cb.addEventListener("change", drawTrapezium)
-    );
-
+  B.addEventListener("input", () => {
+    updateDynamicLimits();
+    drawTrapezium();
+  });
 
   updateDynamicLimits();
   drawTrapezium();
+}
 
+function clamp(value, min, max) {
+  value = Number(value);
+  if (isNaN(value)) return min;
+  return Math.min(Math.max(value, min), max);
+}
+
+function updateDynamicLimits() {
+  const Bv = Number(document.getElementById("B").value);
+  const C = document.getElementById("C");
+  const D = document.getElementById("D");
+
+  const maxC = Math.max(20, Bv - 1);
+  C.max = maxC;
+  let Cv = Number(C.value);
+  if (isNaN(Cv) || C.value === "") Cv = 20;
+  Cv = Math.max(20, Math.min(Cv, maxC));
+  C.value = Cv;
+  document.getElementById("CmaxLabel").textContent = maxC;
+
+  const maxD = Math.max(0, Bv - Cv);
+  D.max = maxD;
+  let Dv = Number(D.value);
+  if (isNaN(Dv) || D.value === "") Dv = 0;
+  Dv = Math.max(0, Math.min(Dv, maxD));
+  D.value = Dv;
+  document.getElementById("DmaxLabel").textContent = maxD;
 }
 
 window.onload = setupInputs;
 
-
 // -------------------------------
-// CLAMP
-// -------------------------------
-
-function clamp(value, min, max) {
-
-  value = Number(value);
-
-  if (isNaN(value)) return min;
-
-  return Math.min(
-    Math.max(value, min),
-    max
-  );
-
-}
-
-
-// -------------------------------
-// LIMITS
-// -------------------------------
-
-function updateDynamicLimits() {
-
-  const Bv =
-    Number(
-      document.getElementById("B").value
-    );
-
-  const C =
-    document.getElementById("C");
-
-  const D =
-    document.getElementById("D");
-
-  const maxC =
-    Math.max(20, Bv - 1);
-
-  C.max = maxC;
-
-  if (C.value > maxC)
-    C.value = maxC;
-
-  document
-    .getElementById("CmaxLabel")
-    .textContent = maxC;
-
-
-  const maxD =
-    Math.max(
-      0,
-      Bv - Number(C.value)
-    );
-
-  D.max = maxD;
-
-  if (D.value > maxD)
-    D.value = maxD;
-
-  document
-    .getElementById("DmaxLabel")
-    .textContent = maxD;
-
-}
-
-
-// -------------------------------
-// DRAW SHAPE
+// DRAWING + DIMENSIONS
 // -------------------------------
 
 function drawTrapezium() {
-
-  const type =
-    document.getElementById("type").value;
-
-  const A =
-    Number(
-      document.getElementById("A").value
-    );
-
-  const B =
-    Number(
-      document.getElementById("B").value
-    );
-
-  const C =
-    Number(
-      document.getElementById("C").value
-    );
-
-  const D =
-    Number(
-      document.getElementById("D").value
-    );
-
+  const type = document.getElementById("type").value;
+  const A = Number(document.getElementById("A").value);
+  const B = Number(document.getElementById("B").value);
+  const C = Number(document.getElementById("C").value);
+  const D = Number(document.getElementById("D").value);
 
   let pts;
-
-
   if (type === "regular") {
-
-    const offset =
-      (B - C) / 2;
-
-    pts = [
-      [offset, 0],
-      [offset + C, 0],
-      [B, A],
-      [0, A]
-    ];
-
+    const offset = (B - C) / 2;
+    pts = [[offset,0],[offset+C,0],[B,A],[0,A]];
+  } else if (type === "right") {
+    pts = [[0,0],[C,0],[B,A],[0,A]];
+  } else {
+    pts = [[D,0],[D+C,0],[B,A],[0,A]];
   }
 
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  if (type === "right") {
-
-    pts = [
-      [0, 0],
-      [C, 0],
-      [B, A],
-      [0, A]
-    ];
-
-  }
-
-
-  if (type === "irregular") {
-
-    pts = [
-      [D, 0],
-      [D + C, 0],
-      [B, A],
-      [0, A]
-    ];
-
-  }
-
-
-  const canvas =
-    document.getElementById("canvas");
-
-  const ctx =
-    canvas.getContext("2d");
-
-
-  ctx.clearRect(
-    0,
-    0,
-    canvas.width,
-    canvas.height
-  );
-
-
-  const xs =
-    pts.map(p => p[0]);
-
-  const ys =
-    pts.map(p => p[1]);
-
-
-  const minX =
-    Math.min(...xs);
-
-  const maxX =
-    Math.max(...xs);
-
-  const minY =
-    Math.min(...ys);
-
-  const maxY =
-    Math.max(...ys);
-
-
-  const w =
-    maxX - minX;
-
-  const h =
-    maxY - minY;
-
+  const xs = pts.map(p=>p[0]);
+  const ys = pts.map(p=>p[1]);
+  const minX = Math.min(...xs), maxX=Math.max(...xs);
+  const minY = Math.min(...ys), maxY=Math.max(...ys);
+  const shapeWidth = maxX-minX, shapeHeight=maxY-minY;
 
   const margin = 150;
+  const scaleX = (canvas.width-margin*2)/shapeWidth;
+  const scaleY = (canvas.height-margin*2)/shapeHeight;
+  const scale = Math.min(scaleX,scaleY);
 
-  const scale =
-    Math.min(
-      (canvas.width - margin * 2) / w,
-      (canvas.height - margin * 2) / h
-    );
-
-
-  const offsetX =
-    (canvas.width - w * scale) / 2 -
-    minX * scale;
-
-  const offsetY =
-    (canvas.height - h * scale) / 2 -
-    minY * scale;
-
+  const offsetX = (canvas.width-shapeWidth*scale)/2 - minX*scale;
+  const offsetY = (canvas.height-shapeHeight*scale)/2 - minY*scale;
 
   ctx.beginPath();
-
-  ctx.moveTo(
-    pts[0][0] * scale + offsetX,
-    pts[0][1] * scale + offsetY
-  );
-
-  for (let i = 1; i < pts.length; i++) {
-
-    ctx.lineTo(
-      pts[i][0] * scale + offsetX,
-      pts[i][1] * scale + offsetY
-    );
-
+  ctx.moveTo(pts[0][0]*scale+offsetX, pts[0][1]*scale+offsetY);
+  for(let i=1;i<pts.length;i++) {
+    ctx.lineTo(pts[i][0]*scale+offsetX, pts[i][1]*scale+offsetY);
   }
-
   ctx.closePath();
-
-  ctx.lineWidth = 3;
+  ctx.lineWidth=3;
+  ctx.strokeStyle="#000";
   ctx.stroke();
 
-
-  drawDimensions(
-    ctx,
-    pts,
-    scale,
-    offsetX,
-    offsetY,
-    A,
-    B,
-    C
-  );
-
-
-  drawBanding(
-    ctx,
-    pts,
-    scale,
-    offsetX,
-    offsetY
-  );
-
+  drawDimensions(ctx, pts, scale, offsetX, offsetY, A, B, C);
+  drawBanding(ctx, pts, scale, offsetX, offsetY);
 }
-
 
 // -------------------------------
 // DIMENSIONS
 // -------------------------------
 
-function drawDimensions(
-  ctx,
-  pts,
-  scale,
-  offsetX,
-  offsetY,
-  A,
-  B,
-  C
-) {
+function drawDimensions(ctx, pts, scale, offsetX, offsetY, A, B, C) {
+  ctx.font="16px Arial";
+  const TL=pts[0], TR=pts[1], BR=pts[2], BL=pts[3];
 
-  ctx.font = "16px Arial";
+  // Top
+  drawDimLine(ctx, TL[0]*scale+offsetX, TL[1]*scale+offsetY-30,
+                   TR[0]*scale+offsetX, TR[1]*scale+offsetY-30,
+                   C+" mm");
 
+  // Bottom
+  drawDimLine(ctx, BL[0]*scale+offsetX, BL[1]*scale+offsetY+40,
+                   BR[0]*scale+offsetX, BR[1]*scale+offsetY+40,
+                   B+" mm");
 
-  const TL = pts[0];
-  const TR = pts[1];
-  const BR = pts[2];
-  const BL = pts[3];
-
-
-  const topY =
-    TL[1] * scale +
-    offsetY -
-    30;
-
-  drawDimLine(
-    ctx,
-    TL[0] * scale + offsetX,
-    topY,
-    TR[0] * scale + offsetX,
-    topY,
-    C + " mm"
-  );
-
-
-  const bottomY =
-    BL[1] * scale +
-    offsetY +
-    40;
-
-  drawDimLine(
-    ctx,
-    BL[0] * scale + offsetX,
-    bottomY,
-    BR[0] * scale + offsetX,
-    bottomY,
-    B + " mm"
-  );
-
-
-  const leftX =
-    BL[0] * scale +
-    offsetX -
-    40;
-
-  drawDimLine(
-    ctx,
-    leftX,
-    TL[1] * scale + offsetY,
-    leftX,
-    BL[1] * scale + offsetY,
-    A + " mm"
-  );
-
+  // Left
+  drawDimLine(ctx, BL[0]*scale+offsetX-40, TL[1]*scale+offsetY,
+                   BL[0]*scale+offsetX-40, BL[1]*scale+offsetY,
+                   A+" mm");
 }
 
-
-// -------------------------------
-// DIM LINE FIXED
-// -------------------------------
-
-function drawDimLine(
-  ctx,
-  x1,
-  y1,
-  x2,
-  y2,
-  label
-) {
-
+function drawDimLine(ctx, x1, y1, x2, y2, label) {
   ctx.beginPath();
-  ctx.moveTo(x1, y1);
-  ctx.lineTo(x2, y2);
+  ctx.moveTo(x1,y1);
+  ctx.lineTo(x2,y2);
   ctx.stroke();
+  drawArrow(ctx,x1,y1,x2,y2);
+  drawArrow(ctx,x2,y2,x1,y1);
 
+  const midX = (x1+x2)/2;
+  const midY = (y1+y2)/2;
 
-  drawArrow(ctx, x1, y1, x2, y2);
-  drawArrow(ctx, x2, y2, x1, y1);
-
-
-  const midX = (x1 + x2) / 2;
-  const midY = (y1 + y2) / 2;
-
-
-  const isVertical =
-    Math.abs(x1 - x2) < 1;
-
-
+  const isVertical = Math.abs(x1-x2)<1;
   const padding = 10;
-  const textWidth =
-    ctx.measureText(label).width;
+  const textWidth = ctx.measureText(label).width;
 
-
-  if (isVertical) {
-
-    ctx.textAlign = "right";
-
-    ctx.fillText(
-      label,
-      midX - padding - textWidth * 0.1,
-      midY
-    );
-
+  if(isVertical){
+    ctx.textAlign="right";
+    ctx.textBaseline="middle";
+    ctx.fillText(label, midX-padding-textWidth*0.1, midY);
   } else {
-
-    ctx.textAlign = "center";
-
-    const canvasMid =
-      document
-        .getElementById("canvas")
-        .height / 2;
-
-    if (midY > canvasMid) {
-
-      ctx.fillText(
-        label,
-        midX,
-        midY + 20
-      );
-
-    } else {
-
-      ctx.fillText(
-        label,
-        midX,
-        midY - 20
-      );
-
-    }
-
+    ctx.textAlign="center";
+    ctx.textBaseline="middle";
+    const canvasMid = document.getElementById("canvas").height/2;
+    if(midY>canvasMid) ctx.fillText(label, midX, midY+20);
+    else ctx.fillText(label, midX, midY-20);
   }
+}
 
+function drawArrow(ctx,x1,y1,x2,y2){
+  const angle=Math.atan2(y2-y1,x2-x1);
+  const size=8;
+  ctx.beginPath();
+  ctx.moveTo(x1,y1);
+  ctx.lineTo(x1+size*Math.cos(angle+Math.PI/6), y1+size*Math.sin(angle+Math.PI/6));
+  ctx.lineTo(x1+size*Math.cos(angle-Math.PI/6), y1+size*Math.sin(angle-Math.PI/6));
+  ctx.closePath();
+  ctx.fill();
+}
+
+// -------------------------------
+// EDGE BANDING
+// -------------------------------
+
+function computeOffsetEdges(pts, scale, offsetX, offsetY, offsetPx){
+  const edges=[];
+  for(let i=0;i<pts.length;i++){
+    const p1=pts[i], p2=pts[(i+1)%pts.length];
+    const x1=p1[0]*scale+offsetX, y1=p1[1]*scale+offsetY;
+    const x2=p2[0]*scale+offsetX, y2=p2[1]*scale+offsetY;
+    const dx=x2-x1, dy=y2-y1, len=Math.sqrt(dx*dx+dy*dy);
+    const nx=-dy/len, ny=dx/len; // OUTSIDE normal
+    edges.push({x1:x1+nx*offsetPx, y1:y1+ny*offsetPx, x2:x2+nx*offsetPx, y2:y2+ny*offsetPx});
+  }
+  return edges;
+}
+
+function intersectLines(e1,e2){
+  const {x1:x1,y1:y1,x2:x2,y2:y2}=e1;
+  const {x1:x3,y1:y3,x2:x4,y2:y4}=e2;
+  const denom=(x1-x2)*(y3-y4)-(y1-y2)*(x3-x4);
+  if(denom===0) return {x:x2,y:y2};
+  const px=((x1*y2-y1*x2)*(x3-x4)-(x1-x2)*(x3*y4-y3*x4))/denom;
+  const py=((x1*y2-y1*x2)*(y3-y4)-(y1-y2)*(x3*y4-y3*x4))/denom;
+  return {x:px,y:py};
+}
+
+function computeOffsetPolygon(pts, scale, offsetX, offsetY, offsetPx){
+  const edges=computeOffsetEdges(pts,scale,offsetX,offsetY,offsetPx);
+  const poly=[];
+  for(let i=0;i<edges.length;i++){
+    const e1=edges[i], e2=edges[(i+1)%edges.length];
+    poly.push(intersectLines(e1,e2));
+  }
+  return poly;
+}
+
+function drawBanding(ctx, pts, scale, offsetX, offsetY){
+  const offsetPx=12;
+  const poly=computeOffsetPolygon(pts,scale,offsetX,offsetY,offsetPx);
+  if(!poly) return;
+  const bandTop=document.getElementById("bandTop");
+  const bandRight=document.getElementById("bandRight");
+  const bandBottom=document.getElementById("bandBottom");
+  const bandLeft=document.getElementById("bandLeft");
+  ctx.strokeStyle="red";
+  ctx.lineWidth=3;
+  if(bandTop.checked){ctx.beginPath();ctx.moveTo(poly[0].x,poly[0].y);ctx.lineTo(poly[1].x,poly[1].y);ctx.stroke();}
+  if(bandRight.checked){ctx.beginPath();ctx.moveTo(poly[1].x,poly[1].y);ctx.lineTo(poly[2].x,poly[2].y);ctx.stroke();}
+  if(bandBottom.checked){ctx.beginPath();ctx.moveTo(poly[2].x,poly[2].y);ctx.lineTo(poly[3].x,poly[3].y);ctx.stroke();}
+  if(bandLeft.checked){ctx.beginPath();ctx.moveTo(poly[3].x,poly[3].y);ctx.lineTo(poly[0].x,poly[0].y);ctx.stroke();}
+}
+
+// -------------------------------
+// EXPORT FUNCTIONS
+// -------------------------------
+
+function downloadPNG(){
+  const canvas=document.getElementById("canvas");
+  const name=document.getElementById("fileName").value||"trapezium";
+  const link=document.createElement("a");
+  link.download=name+".png";
+  link.href=canvas.toDataURL();
+  link.click();
+}
+
+function downloadDXF(){
+  const name=document.getElementById("fileName").value||"trapezium";
+  const type=document.getElementById("type").value;
+  const A=Number(document.getElementById("A").value);
+  const B=Number(document.getElementById("B").value);
+  const C=Number(document.getElementById("C").value);
+  const D=Number(document.getElementById("D").value);
+
+  let pts;
+  if(type==="regular"){const offset=(B-C)/2; pts=[[offset,0],[offset+C,0],[B,A],[0,A]];}
+  else if(type==="right"){pts=[[0,0],[C,0],[B,A],[0,A]];}
+  else{pts=[[D,0],[D+C,0],[B,A],[0,A]];}
+
+  const maxY=Math.max(...pts.map(p=>p[1]));
+
+  let dxf="";
+  dxf+="0\nSECTION\n2\nHEADER\n0\nENDSEC\n";
+  dxf+="0\nSECTION\n2\nTABLES\n";
+  dxf+="0\nTABLE\n2\nLAYER\n70\n1\n";
+  dxf+="0\nLAYER\n2\n0\n70\n0\n62\n7\n6\nCONTINUOUS\n";
+  dxf+="0\nENDTAB\n0\nENDSEC\n";
+  dxf+="0\nSECTION\n2\nENTITIES\n";
+  dxf+="0\nLWPOLYLINE\n100\nAcDbPolyline\n90\n4\n70\n1\n8\n0\n";
+  pts.forEach(p=>{
+    const x=p[0], y=maxY-p[1];
+    dxf+=`10\n${x}\n20\n${y}\n`;
+  });
+  dxf+="0\nENDSEC\n0\nEOF";
+
+  const blob=new Blob([dxf], {type:"application/dxf"});
+  const link=document.createElement("a");
+  link.href=URL.createObjectURL(blob);
+  link.download=name+".dxf";
+  link.click();
 }
