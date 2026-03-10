@@ -317,13 +317,42 @@ function intersectLines(e1,e2){
 // EXPORT FUNCTIONS
 
 function downloadPNG(){
-  const canvas=document.getElementById("canvas");
-  const name=document.getElementById("fileName").value||"trapezium";
-  const link=document.createElement("a");
-  link.download=name+".png";
-  link.href=canvas.toDataURL();
+
+  const name = document.getElementById("fileName").value || "trapezium";
+
+  const srcCanvas = document.getElementById("canvas");
+
+  // Create 2K export canvas
+  const exportCanvas = document.createElement("canvas");
+  exportCanvas.width = 2048;
+  exportCanvas.height = 2048;
+
+  const ctx = exportCanvas.getContext("2d");
+
+  // --- background (same as screen) ---
+  ctx.fillStyle = "#f3efe3";   // ← use your page background colour here
+  ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+
+  // --- scale drawing to fit ---
+  const scaleX = exportCanvas.width / srcCanvas.width;
+  const scaleY = exportCanvas.height / srcCanvas.height;
+  const scale = Math.min(scaleX, scaleY);
+
+  ctx.save();
+  ctx.scale(scale, scale);
+
+  // draw original canvas onto export canvas
+  ctx.drawImage(srcCanvas, 0, 0);
+
+  ctx.restore();
+
+  // --- download ---
+  const link = document.createElement("a");
+  link.download = name + ".png";
+  link.href = exportCanvas.toDataURL("image/png");
   link.click();
 }
+
 
 function downloadDXF(){
   const name=document.getElementById("fileName").value||"trapezium";
