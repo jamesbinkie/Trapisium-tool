@@ -147,32 +147,17 @@ function drawTrapezium() {
 // DIMENSIONS
 // -------------------------------
 
-function drawDimensions(ctx, pts, scale, offsetX, offsetY, A, B, C) {
-  const TL = pts[0], TR = pts[1], BR = pts[2], BL = pts[3];
-  ctx.font = "16px Arial";
+function computeOffsetPolygon(pts, scale, offsetX, offsetY, offsetPx) {
+  const edges = computeOffsetEdges(pts, scale, offsetX, offsetY, offsetPx);
+  const poly = [];
 
-  const lineOffset = 20; // space between shape and dimension line
+  for (let i = 0; i < edges.length; i++) {
+    const e1 = edges[i];
+    const e2 = edges[(i + 1) % edges.length];
+    poly.push(intersectLines(e1, e2));
+  }
 
-  // Top: move line above the shape
-  drawDimLine(ctx,
-              TL[0]*scale+offsetX, TL[1]*scale+offsetY - lineOffset,
-              TR[0]*scale+offsetX, TR[1]*scale+offsetY - lineOffset,
-              C + " mm",
-              "above");
-
-  // Bottom: move line below the shape
-  drawDimLine(ctx,
-              BL[0]*scale+offsetX, BL[1]*scale+offsetY + lineOffset,
-              BR[0]*scale+offsetX, BR[1]*scale+offsetY + lineOffset,
-              B + " mm",
-              "below");
-
-  // Left: move line to the left of the shape
-  drawDimLine(ctx,
-              BL[0]*scale+offsetX - lineOffset, TL[1]*scale+offsetY,
-              BL[0]*scale+offsetX - lineOffset, BL[1]*scale+offsetY,
-              A + " mm",
-              "left");
+  return poly;
 }
 
 
