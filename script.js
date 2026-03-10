@@ -208,16 +208,29 @@ function drawDimLine(ctx, x1, y1, x2, y2, label, position) {
 }
 
 
-function drawArrow(ctx,x1,y1,x2,y2){
-  const angle=Math.atan2(y2-y1,x2-x1);
-  const size=8;
+function drawArrow(ctx, x1, y1, x2, y2) {
+  const angle = Math.atan2(y2 - y1, x2 - x1);
+  const size = 8;           // arrowhead size
+  const arrowOffset = 6;    // how far past the line the arrow tip sticks out
+
+  // Move the tip slightly past the line end
+  const tipX = x2 + arrowOffset * Math.cos(angle);
+  const tipY = y2 + arrowOffset * Math.sin(angle);
+
   ctx.beginPath();
-  ctx.moveTo(x1,y1);
-  ctx.lineTo(x1+size*Math.cos(angle+Math.PI/6), y1+size*Math.sin(angle+Math.PI/6));
-  ctx.lineTo(x1+size*Math.cos(angle-Math.PI/6), y1+size*Math.sin(angle-Math.PI/6));
+  ctx.moveTo(tipX, tipY);
+  ctx.lineTo(
+    tipX - size * Math.cos(angle - Math.PI / 6),
+    tipY - size * Math.sin(angle - Math.PI / 6)
+  );
+  ctx.lineTo(
+    tipX - size * Math.cos(angle + Math.PI / 6),
+    tipY - size * Math.sin(angle + Math.PI / 6)
+  );
   ctx.closePath();
   ctx.fill();
 }
+
 
 // -------------------------------
 // EDGE BANDING
