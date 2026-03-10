@@ -320,38 +320,45 @@ function downloadPNG(){
 
   const name = document.getElementById("fileName").value || "trapezium";
 
-  const srcCanvas = document.getElementById("canvas");
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
 
-  // Create 2K export canvas
+  // save original size
+  const oldWidth = canvas.width;
+  const oldHeight = canvas.height;
+
+  // --- set 4K size ---
+  canvas.width = 3840;
+  canvas.height = 2160;
+
+  // redraw at 4K using SAME draw code
+  drawTrapezium();
+
+  // --- add background ---
   const exportCanvas = document.createElement("canvas");
-  exportCanvas.width = 2048;
-  exportCanvas.height = 2048;
+  exportCanvas.width = canvas.width;
+  exportCanvas.height = canvas.height;
 
-  const ctx = exportCanvas.getContext("2d");
+  const exportCtx = exportCanvas.getContext("2d");
 
-  // --- background (same as screen) ---
-  ctx.fillStyle = "#f3efe3";   // ← use your page background colour here
-  ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+  exportCtx.fillStyle = "#f3efe3"; // same background
+  exportCtx.fillRect(0,0,exportCanvas.width,exportCanvas.height);
 
-  // --- scale drawing to fit ---
-  const scaleX = exportCanvas.width / srcCanvas.width;
-  const scaleY = exportCanvas.height / srcCanvas.height;
-  const scale = Math.min(scaleX, scaleY);
+  exportCtx.drawImage(canvas,0,0);
 
-  ctx.save();
-  ctx.scale(scale, scale);
-
-  // draw original canvas onto export canvas
-  ctx.drawImage(srcCanvas, 0, 0);
-
-  ctx.restore();
-
-  // --- download ---
+  // download
   const link = document.createElement("a");
   link.download = name + ".png";
   link.href = exportCanvas.toDataURL("image/png");
   link.click();
+
+  // restore original size
+  canvas.width = oldWidth;
+  canvas.height = oldHeight;
+
+  drawTrapezium();
 }
+
 
 
 function downloadDXF(){
