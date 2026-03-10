@@ -147,58 +147,46 @@ function drawTrapezium() {
 function drawDimensions(ctx, pts, scale, offsetX, offsetY) {
   const TL = pts[0], TR = pts[1], BR = pts[2], BL = pts[3];
 
-  // Top (above), Bottom (below), Left (left)
   drawDimLine(ctx, TL[0]*scale+offsetX, TL[1]*scale+offsetY, TR[0]*scale+offsetX, TR[1]*scale+offsetY, `${Number(TR[0]-TL[0])} mm`, "above");
   drawDimLine(ctx, BL[0]*scale+offsetX, BL[1]*scale+offsetY, BR[0]*scale+offsetX, BR[1]*scale+offsetY, `${Number(BR[0]-BL[0])} mm`, "below");
   drawDimLine(ctx, TL[0]*scale+offsetX, TL[1]*scale+offsetY, BL[0]*scale+offsetX, BL[1]*scale+offsetY, `${Number(BL[1]-TL[1])} mm`, "left");
 }
 
 function drawDimLine(ctx, x1, y1, x2, y2, label, position) {
-  const offset = 20; // space to push dimension line away from shape
+  const offset = 30; // pushed dimension lines further away from shape
+  const textOffset = 15; // distance of text from line
+  ctx.font = "18px Arial";
 
   let lineX1 = x1, lineY1 = y1;
   let lineX2 = x2, lineY2 = y2;
 
-  // Push horizontal lines above or below the shape
-  if (position === "above") {
-    lineY1 -= offset;
-    lineY2 -= offset;
-  } else if (position === "below") {
-    lineY1 += offset;
-    lineY2 += offset;
-  }
-  // Push vertical line left of the shape
-  else if (position === "left") {
-    lineX1 -= offset;
-    lineX2 -= offset;
-  }
+  if (position === "above") { lineY1 -= offset; lineY2 -= offset; }
+  else if (position === "below") { lineY1 += offset; lineY2 += offset; }
+  else if (position === "left") { lineX1 -= offset; lineX2 -= offset; }
 
-  // Draw the line
   ctx.beginPath();
   ctx.moveTo(lineX1, lineY1);
   ctx.lineTo(lineX2, lineY2);
   ctx.stroke();
 
-  // Draw arrows at ends
   drawArrow(ctx, lineX1, lineY1, lineX2, lineY2);
   drawArrow(ctx, lineX2, lineY2, lineX1, lineY1);
 
-  // Draw the label
   const midX = (lineX1 + lineX2) / 2;
   const midY = (lineY1 + lineY2) / 2;
-  const padding = 4;
 
   ctx.textAlign = position === "left" ? "right" : "center";
   ctx.textBaseline = position === "below" ? "top" : "middle";
 
-  let textX = midX, textY = midY;
-  if (position === "above") textY -= padding;
-  else if (position === "below") textY += padding;
-  else if (position === "left") textX -= padding;
+  let textX = midX;
+  let textY = midY;
+
+  if (position === "above") textY -= textOffset;
+  else if (position === "below") textY += textOffset;
+  else if (position === "left") textX -= textOffset;
 
   ctx.fillText(label, textX, textY);
 }
-
 
 function drawArrow(ctx, x1, y1, x2, y2) {
   const angle = Math.atan2(y2 - y1, x2 - x1);
@@ -219,27 +207,84 @@ function drawArrow(ctx, x1, y1, x2, y2) {
 // -------------------------------
 // EDGE BANDING
 
-function drawBanding(ctx, pts, scale, offsetX, offsetY) {
-  const offsetPx = 12;
+function computeOffsetEdges(pts, scale, offsetX, offsetY, offsetPx) {
+  const edges = [];
+  const cx = pts.reduce((sum,p)=>sum+p[0],0)/pts.length;
+  const cy = pts.reduce((sum,p)=>sum+p[1],0)/pts.length;
 
-  // Compute centroid to push points outside
-  const cx = (pts[0][0]+pts[1][0]+pts[2][0]+pts[3][0])/4;
-  const cy = (pts[0][1]+pts[1][1]+pts[2][1]+pts[3][1])/4;
+  for (let i=0;i<pts.length;i++){
+    const p1 = pts[i];
+    const p2 = pts[(i+1)%pts.length];
 
-  const offsetPts = pts.map(p=>{
-    const dx = p[0]-cx;
-    const dy = p[1]-cy;
-    const len = Math.sqrt(dx*dx+dy*dy)||1;
-    return {x: p[0]*scale+offsetX+(dx/len)*offsetPx, y: p[1]*scale+offsetY+(dy/len)*offsetPx};
-  });
+    const x1 = p1[0]*scale+offsetX;
+    const y1 = p1[1]*scale+offsetY;
+    const x2 = p2[0]*scale+offsetX;
+    const y2 = p2[1]*scale+offsetY;
+
+    const dx = x2-x1;
+    const dy = y2-y1;
+    const len = Math.sqrt(dx*dx+dy*dy);
+
+    let nx = -dy/len;
+    let ny = dx/len;
+
+    const midX = (x1+x2)/2;
+    const midY = (y1+y2)/2;
+    const testX = midX + nx*10;
+    const testY = midY + ny*10;
+    const distBefore = Math.hypot(midX-cx, midY-cy);
+    const distAfter = Math.hypot(testX-cx, testY-cy);
+    if (distAfter < distBefore) { nx = -nx; ny = -ny; }
+
+    edges.push({
+      x1: x1 + nx*offsetPx,
+      y1: y1 + ny*offsetPx,
+      x2: x2 + nx*offsetPx,
+      y2: y2 + ny*offsetPx
+    });
+  }
+
+  return edges;
+}
+
+function computeOffsetPolygon(pts, scale, offsetX, offsetY, offsetPx){
+  const edges = computeOffsetEdges(pts, scale, offsetX, offsetY, offsetPx);
+  const poly = [];
+  for(let i=0;i<edges.length;i++){
+    const e1 = edges[i];
+    const e2 = edges[(i+1)%edges.length];
+    poly.push(intersectLines(e1,e2));
+  }
+  return poly;
+}
+
+function intersectLines(e1,e2){
+  const {x1,y1,x2,y2}=e1;
+  const {x1:x3,y1:y3,x2:x4,y2:y4}=e2;
+  const denom=(x1-x2)*(y3-y4)-(y1-y2)*(x3-x4);
+  if(denom===0) return {x:x2,y:y2};
+  const px=((x1*y2-y1*x2)*(x3-x4)-(x1-x2)*(x3*y4-y3*x4))/denom;
+  const py=((x1*y2-y1*x2)*(y3-y4)-(y1-y2)*(x3*y4-y3*x4))/denom;
+  return {x:px,y:py};
+}
+
+function drawBanding(ctx, pts, scale, offsetX, offsetY){
+  const offsetPx = Math.min(12, Math.min(ctx.canvas.width, ctx.canvas.height)/100);
+  const poly = computeOffsetPolygon(pts, scale, offsetX, offsetY, offsetPx);
+  if(!poly || poly.length!==4) return;
+
+  const bandTop=document.getElementById("bandTop").checked;
+  const bandRight=document.getElementById("bandRight").checked;
+  const bandBottom=document.getElementById("bandBottom").checked;
+  const bandLeft=document.getElementById("bandLeft").checked;
 
   ctx.strokeStyle="red";
   ctx.lineWidth=3;
 
-  if(document.getElementById("bandTop").checked){ctx.beginPath(); ctx.moveTo(offsetPts[0].x,offsetPts[0].y); ctx.lineTo(offsetPts[1].x,offsetPts[1].y); ctx.stroke();}
-  if(document.getElementById("bandRight").checked){ctx.beginPath(); ctx.moveTo(offsetPts[1].x,offsetPts[1].y); ctx.lineTo(offsetPts[2].x,offsetPts[2].y); ctx.stroke();}
-  if(document.getElementById("bandBottom").checked){ctx.beginPath(); ctx.moveTo(offsetPts[2].x,offsetPts[2].y); ctx.lineTo(offsetPts[3].x,offsetPts[3].y); ctx.stroke();}
-  if(document.getElementById("bandLeft").checked){ctx.beginPath(); ctx.moveTo(offsetPts[3].x,offsetPts[3].y); ctx.lineTo(offsetPts[0].x,offsetPts[0].y); ctx.stroke();}
+  if(bandTop){ctx.beginPath(); ctx.moveTo(poly[0].x,poly[0].y); ctx.lineTo(poly[1].x,poly[1].y); ctx.stroke();}
+  if(bandRight){ctx.beginPath(); ctx.moveTo(poly[1].x,poly[1].y); ctx.lineTo(poly[2].x,poly[2].y); ctx.stroke();}
+  if(bandBottom){ctx.beginPath(); ctx.moveTo(poly[2].x,poly[2].y); ctx.lineTo(poly[3].x,poly[3].y); ctx.stroke();}
+  if(bandLeft){ctx.beginPath(); ctx.moveTo(poly[3].x,poly[3].y); ctx.lineTo(poly[0].x,poly[0].y); ctx.stroke();}
 }
 
 // -------------------------------
