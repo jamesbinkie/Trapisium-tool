@@ -24,7 +24,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
-  gap: 25px 35px; /* row gap, column gap */
+  gap: 25px 35px;
 }
 
 .controls label,
@@ -37,10 +37,10 @@ body {
   margin: 0;
 }
 
-/* D (Offset) – hidden by default, same style when shown */
+/* D Offset — hidden by default, styled like others when shown */
 #Dlabel {
-  display: none;          /* hidden on load */
-  flex-direction: column; /* when JS sets display:flex, it matches others */
+  display: none;
+  flex-direction: column;
   min-width: 160px;
   margin: 0;
 }
@@ -70,6 +70,23 @@ body {
   font-size: 12px;
   color: #b5bac1;
   margin-top: 3px;
+}
+
+/* ---------- FILE CONTROLS LAYOUT (NEW) ---------- */
+
+.file-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 25px;
+}
+
+.file-controls label {
+  flex-direction: column;
+  min-width: 200px;
+}
+
+.file-controls button {
+  margin-top: 0;
 }
 
 /* ---------- CHECKBOXES ---------- */
@@ -111,7 +128,7 @@ canvas {
   display: block;
   margin: 0 auto;
   border: 1px solid #000;
-  background: #1e1f22;
+  background: #dfe8f2; /* soft blue-cream tone */
   max-width: 100%;
   height: auto;
   border-radius: 8px;
