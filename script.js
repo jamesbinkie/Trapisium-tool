@@ -356,46 +356,82 @@ function intersectLines(e1,e2){
 // EXPORT FUNCTIONS
 // -------------------------------
 
-function downloadPNG(){
+function downloadPNG() {
   const name = document.getElementById("fileName").value || "trapezium";
 
-  const screenCanvas = document.getElementById("canvas");
-  const maxSize = 4096;
+  // --- 1. Render at full 4K resolution ---
+  const exportW = 4096;
+  const exportH = 4096;
 
-  // compute export w/h preserving aspect ratio of screen canvas
-  let w, h;
-  if (screenCanvas.width >= screenCanvas.height) {
-    w = maxSize;
-    h = Math.round(maxSize * screenCanvas.height / screenCanvas.width);
-  } else {
-    h = maxSize;
-    w = Math.round(maxSize * screenCanvas.width / screenCanvas.height);
-  }
-
-  // draw into a temporary canvas at target resolution using the same renderer
   const tempCanvas = document.createElement("canvas");
-  tempCanvas.width = w;
-  tempCanvas.height = h;
+  tempCanvas.width = exportW;
+  tempCanvas.height = exportH;
 
-  // draw trapezium into tempCanvas (drawTrapezium will clear it first)
+  // Draw the trapezium at 4K
   drawTrapezium(tempCanvas);
 
-  // compose with background so exported PNG has same background
+  // --- 2. Detect the bounding box of all non‑transparent pixels ---
+  const bbox = getCanvasBoundingBox(tempCanvas);
+
+  // --- 3. Add 10% padding around the bounding box ---
+  const padX = Math.round((bbox.w) * 0.10);
+  const padY = Math.round((bbox.h) * 0.10);
+
+  const finalW = bbox.w + padX * 2;
+  const finalH = bbox.h + padY * 2;
+
   const finalCanvas = document.createElement("canvas");
-  finalCanvas.width = w;
-  finalCanvas.height = h;
+  finalCanvas.width = finalW;
+  finalCanvas.height = finalH;
   const fctx = finalCanvas.getContext("2d");
 
-  // change this to match your visualiser background if different
+  // Background (same as your visualiser)
   fctx.fillStyle = "#f3efe3";
-  fctx.fillRect(0,0,w,h);
+  fctx.fillRect(0, 0, finalW, finalH);
 
-  fctx.drawImage(tempCanvas, 0, 0);
+  // --- 4. Copy the cropped region with padding ---
+  fctx.drawImage(
+    tempCanvas,
+    bbox.x, bbox.y, bbox.w, bbox.h,   // source rect
+    padX, padY, bbox.w, bbox.h        // destination rect
+  );
 
+  // --- 5. Export PNG ---
   const link = document.createElement("a");
   link.download = name + ".png";
   link.href = finalCanvas.toDataURL("image/png");
   link.click();
+}
+
+function getCanvasBoundingBox(canvas) {
+  const ctx = canvas.getContext("2d");
+  const { width, height } = canvas;
+  const data = ctx.getImageData(0, 0, width, height).data;
+
+  let minX = width, minY = height, maxX = 0, maxY = 0;
+  let found = false;
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const idx = (y * width + x) * 4;
+      if (data[idx + 3] !== 0) { // non‑transparent pixel
+        found = true;
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
+      }
+    }
+  }
+
+  if (!found) return { x: 0, y: 0, w: width, h: height };
+
+  return {
+    x: minX,
+    y: minY,
+    w: maxX - minX + 1,
+    h: maxY - minY + 1
+  };
 }
 
 function downloadDXF(){
