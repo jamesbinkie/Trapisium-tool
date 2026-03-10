@@ -5,7 +5,7 @@
   <title>Trapezium Generator</title>
 
   <!-- Guaranteed CSS load with cache-buster -->
-  <link rel="stylesheet" href="style.css?v=10005">
+  <link rel="stylesheet" href="style.css?v=10006">
 
 </head>
 
@@ -17,7 +17,7 @@
 
 <div class="controls panel">
 
-  <!-- Type moved to first position -->
+  <!-- Type -->
   <label>Type:
     <select id="type">
       <option value="regular">Regular</option>
@@ -26,27 +26,30 @@
     </select>
   </label>
 
+  <!-- A -->
   <label>A (Height):
     <input id="A" type="number" value="100" min="100" max="2440" onclick="this.select()">
     <div class="range">Min 100 mm — Max 2440 mm</div>
   </label>
 
+  <!-- B -->
   <label>B (Bottom Width):
     <input id="B" type="number" value="50" min="50" max="1220" onclick="this.select()">
     <div class="range">Min 50 mm — Max 1220 mm</div>
   </label>
 
+  <!-- C -->
   <label>C (Top Width):
     <input id="C" type="number" value="20" min="20" onclick="this.select()">
     <div class="range">Min 20 mm — Max <span id="CmaxLabel">49</span> mm</div>
   </label>
 
-  <label id="Dlabel">D (Offset):
+  <!-- D (Offset) — hidden by default -->
+  <label id="Dlabel">
+    D (Offset):
     <input id="D" type="number" value="0" min="0" onclick="this.select()">
     <div class="range">0 mm — Max <span id="DmaxLabel">0</span> mm</div>
   </label>
-
-  <!-- Draw button removed -->
 
 </div>
 
@@ -60,21 +63,41 @@
 
 <h3>Export</h3>
 <div class="file-controls panel">
+
   <label>File Name:
     <input id="fileName" type="text" value="trapezium">
   </label>
 
   <button onclick="downloadPNG()">Download PNG</button>
   <button onclick="downloadDXF()">Download DXF</button>
+
 </div>
 
-<!-- Canvas background will be updated in CSS -->
+<!-- Canvas with soft blue-cream background -->
 <canvas id="canvas" width="900" height="600"></canvas>
 
 </div>
 
-<div id="versionLabel">v1.3.9</div>
+<div id="versionLabel">v1.3.8</div>
 
 <script src="script.js"></script>
+
+<script>
+/* Ensure D Offset is hidden on load */
+document.getElementById("Dlabel").style.display = "none";
+
+/* Type change logic */
+document.getElementById("type").addEventListener("change", function () {
+  const type = this.value;
+  const Dlabel = document.getElementById("Dlabel");
+
+  if (type === "irregular") {
+    Dlabel.style.display = "flex";   // matches other inputs
+  } else {
+    Dlabel.style.display = "none";
+  }
+});
+</script>
+
 </body>
 </html>
