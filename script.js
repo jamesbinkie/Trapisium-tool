@@ -174,11 +174,16 @@ function drawDimensions(ctx, pts, scale, offsetX, offsetY) {
     "below"
   );
 
-  // Left (height)
+  // Left (height) — always vertical
+  const dimX = Math.min(
+    TL[0] * scale + offsetX,
+    BL[0] * scale + offsetX
+  ) - 40 * (ctx.canvas.width / 900); // fixed offset to the left
+  
   drawDimLine(
     ctx,
-    TL[0] * scale + offsetX, TL[1] * scale + offsetY,
-    BL[0] * scale + offsetX, BL[1] * scale + offsetY,
+    dimX, TL[1] * scale + offsetY,
+    dimX, BL[1] * scale + offsetY,
     `${Number((BL[1] - TL[1]).toFixed(2))} mm`,
     "left"
   );
