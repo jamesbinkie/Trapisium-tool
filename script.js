@@ -28,6 +28,7 @@ function setupInputs() {
   clampOnBlur(A, 100, 2440);
   clampOnBlur(B, 50, 1220);
 
+
   C.addEventListener("blur", () => {
 
     const Bv = Number(B.value);
@@ -89,7 +90,6 @@ function setupInputs() {
   drawTrapezium();
 
 }
-
 
 window.onload = setupInputs;
 
@@ -161,7 +161,7 @@ function updateDynamicLimits() {
 
 
 // -------------------------------
-// DRAW
+// DRAW SHAPE
 // -------------------------------
 
 function drawTrapezium() {
@@ -409,7 +409,7 @@ function drawDimensions(
 
 
 // -------------------------------
-// DIM LINE (UPDATED)
+// DIM LINE FIXED
 // -------------------------------
 
 function drawDimLine(
@@ -440,7 +440,6 @@ function drawDimLine(
 
 
   const padding = 10;
-
   const textWidth =
     ctx.measureText(label).width;
 
@@ -457,7 +456,14 @@ function drawDimLine(
 
   } else {
 
-    if (y1 > y2) {
+    ctx.textAlign = "center";
+
+    const canvasMid =
+      document
+        .getElementById("canvas")
+        .height / 2;
+
+    if (midY > canvasMid) {
 
       ctx.fillText(
         label,
@@ -476,106 +482,5 @@ function drawDimLine(
     }
 
   }
-
-}
-
-
-// -------------------------------
-// ARROW
-// -------------------------------
-
-function drawArrow(
-  ctx,
-  x1,
-  y1,
-  x2,
-  y2
-) {
-
-  const angle =
-    Math.atan2(
-      y2 - y1,
-      x2 - x1
-    );
-
-  const size = 8;
-
-
-  ctx.beginPath();
-
-  ctx.moveTo(x1, y1);
-
-  ctx.lineTo(
-    x1 + size * Math.cos(angle + Math.PI / 6),
-    y1 + size * Math.sin(angle + Math.PI / 6)
-  );
-
-  ctx.lineTo(
-    x1 + size * Math.cos(angle - Math.PI / 6),
-    y1 + size * Math.sin(angle - Math.PI / 6)
-  );
-
-  ctx.closePath();
-  ctx.fill();
-
-}
-
-
-// -------------------------------
-// BAND OUTSIDE
-// -------------------------------
-
-function computeOffsetEdges(
-  pts,
-  scale,
-  offsetX,
-  offsetY,
-  offsetPx
-) {
-
-  const edges = [];
-
-  for (let i = 0; i < pts.length; i++) {
-
-    const p1 = pts[i];
-    const p2 = pts[(i + 1) % pts.length];
-
-    const x1 =
-      p1[0] * scale + offsetX;
-
-    const y1 =
-      p1[1] * scale + offsetY;
-
-    const x2 =
-      p2[0] * scale + offsetX;
-
-    const y2 =
-      p2[1] * scale + offsetY;
-
-
-    const dx = x2 - x1;
-    const dy = y2 - y1;
-
-    const len =
-      Math.sqrt(dx * dx + dy * dy);
-
-
-    const nx = -dy / len;
-    const ny = dx / len;
-
-
-    edges.push({
-
-      x1: x1 + nx * offsetPx,
-      y1: y1 + ny * offsetPx,
-
-      x2: x2 + nx * offsetPx,
-      y2: y2 + ny * offsetPx
-
-    });
-
-  }
-
-  return edges;
 
 }
