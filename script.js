@@ -205,14 +205,12 @@ function drawArrow(ctx, x1, y1, x2, y2) {
 }
 
 // -------------------------------
-// EDGE BANDING
-
-// -------------------------------
-// EDGE BANDING (fixed uniform outline)
+// EDGE BANDING (clean, consistent)
 function drawBanding(ctx, pts, scale, offsetX, offsetY){
-  const offsetPx = Math.min(12, Math.min(ctx.canvas.width, ctx.canvas.height)/100);
+  // Offset amount proportional to canvas, but min 12px
+  const offsetPx = Math.max(12, Math.min(ctx.canvas.width, ctx.canvas.height)/100);
 
-  // Compute offset polygon properly
+  // Compute offset polygon
   const poly = computeOffsetPolygonEdges(pts, scale, offsetX, offsetY, offsetPx);
   if(!poly || poly.length!==4) return;
 
@@ -224,18 +222,17 @@ function drawBanding(ctx, pts, scale, offsetX, offsetY){
   ctx.strokeStyle = "red";
   ctx.lineWidth = 3;
 
-  if(bandTop){ctx.beginPath(); ctx.moveTo(poly[0].x,poly[0].y); ctx.lineTo(poly[1].x,poly[1].y); ctx.stroke();}
-  if(bandRight){ctx.beginPath(); ctx.moveTo(poly[1].x,poly[1].y); ctx.lineTo(poly[2].x,poly[2].y); ctx.stroke();}
-  if(bandBottom){ctx.beginPath(); ctx.moveTo(poly[2].x,poly[2].y); ctx.lineTo(poly[3].x,poly[3].y); ctx.stroke();}
-  if(bandLeft){ctx.beginPath(); ctx.moveTo(poly[3].x,poly[3].y); ctx.lineTo(poly[0].x,poly[0].y); ctx.stroke();}
+  if(bandTop){ ctx.beginPath(); ctx.moveTo(poly[0].x,poly[0].y); ctx.lineTo(poly[1].x,poly[1].y); ctx.stroke();}
+  if(bandRight){ ctx.beginPath(); ctx.moveTo(poly[1].x,poly[1].y); ctx.lineTo(poly[2].x,poly[2].y); ctx.stroke();}
+  if(bandBottom){ ctx.beginPath(); ctx.moveTo(poly[2].x,poly[2].y); ctx.lineTo(poly[3].x,poly[3].y); ctx.stroke();}
+  if(bandLeft){ ctx.beginPath(); ctx.moveTo(poly[3].x,poly[3].y); ctx.lineTo(poly[0].x,poly[0].y); ctx.stroke();}
 }
 
-// Helper to compute properly offset polygon using edge normals
+// Compute offset polygon by offsetting edges along normals and intersecting
 function computeOffsetPolygonEdges(pts, scale, offsetX, offsetY, offsetPx){
-  const edges = [];
   const n = pts.length;
+  const edges = [];
 
-  // Compute normals per edge, offset edge lines
   for(let i=0;i<n;i++){
     const p1 = pts[i];
     const p2 = pts[(i+1)%n];
@@ -247,36 +244,31 @@ function computeOffsetPolygonEdges(pts, scale, offsetX, offsetY, offsetPx){
 
     const dx = x2 - x1;
     const dy = y2 - y1;
-    const len = Math.sqrt(dx*dx + dy*dy);
+    const len = Math.sqrt(dx*dx + dy*dy) || 1;
     let nx = -dy/len;
     let ny = dx/len;
 
-    // Test normal direction to point outward
+    // Determine outward normal by testing against centroid
     const midX = (x1+x2)/2;
     const midY = (y1+y2)/2;
-    const centroidX = pts.reduce((sum,p)=>sum+p[0],0)/n*scale + offsetX;
-    const centroidY = pts.reduce((sum,p)=>sum+p[1],0)/n*scale + offsetY;
+    const cx = pts.reduce((sum,p)=>sum+p[0],0)/n*scale + offsetX;
+    const cy = pts.reduce((sum,p)=>sum+p[1],0)/n*scale + offsetY;
     const testX = midX + nx*10;
     const testY = midY + ny*10;
-    const distBefore = Math.hypot(midX-centroidX, midY-centroidY);
-    const distAfter = Math.hypot(testX-centroidX, testY-centroidY);
-    if(distAfter < distBefore){ nx=-nx; ny=-ny; }
+    if(Math.hypot(testX-cx,testY-cy) < Math.hypot(midX-cx,midY-cy)){ nx=-nx; ny=-ny; }
 
     edges.push({x1:x1+nx*offsetPx, y1:y1+ny*offsetPx, x2:x2+nx*offsetPx, y2:y2+ny*offsetPx});
   }
 
-  // Intersect adjacent offset edges to get new polygon
+  // Intersect adjacent edges to get polygon corners
   const poly = [];
   for(let i=0;i<n;i++){
-    const e1 = edges[i];
-    const e2 = edges[(i+1)%n];
-    poly.push(intersectLines(e1,e2));
+    poly.push(intersectLines(edges[i], edges[(i+1)%n]));
   }
-
   return poly;
 }
 
-// Reuse the intersectLines function from your script
+// Line intersection utility
 function intersectLines(e1,e2){
   const {x1,y1,x2,y2}=e1;
   const {x1:x3,y1:y3,x2:x4,y2:y4}=e2;
@@ -287,25 +279,6 @@ function intersectLines(e1,e2){
   return {x:px,y:py};
 }
 
-
-function drawBanding(ctx, pts, scale, offsetX, offsetY){
-  const offsetPx = Math.min(12, Math.min(ctx.canvas.width, ctx.canvas.height)/100);
-  const poly = computeOffsetPolygon(pts, scale, offsetX, offsetY, offsetPx);
-  if(!poly || poly.length!==4) return;
-
-  const bandTop=document.getElementById("bandTop").checked;
-  const bandRight=document.getElementById("bandRight").checked;
-  const bandBottom=document.getElementById("bandBottom").checked;
-  const bandLeft=document.getElementById("bandLeft").checked;
-
-  ctx.strokeStyle="red";
-  ctx.lineWidth=3;
-
-  if(bandTop){ctx.beginPath(); ctx.moveTo(poly[0].x,poly[0].y); ctx.lineTo(poly[1].x,poly[1].y); ctx.stroke();}
-  if(bandRight){ctx.beginPath(); ctx.moveTo(poly[1].x,poly[1].y); ctx.lineTo(poly[2].x,poly[2].y); ctx.stroke();}
-  if(bandBottom){ctx.beginPath(); ctx.moveTo(poly[2].x,poly[2].y); ctx.lineTo(poly[3].x,poly[3].y); ctx.stroke();}
-  if(bandLeft){ctx.beginPath(); ctx.moveTo(poly[3].x,poly[3].y); ctx.lineTo(poly[0].x,poly[0].y); ctx.stroke();}
-}
 
 // -------------------------------
 // EXPORT FUNCTIONS
