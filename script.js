@@ -153,9 +153,12 @@ function drawDimensions(ctx, pts, scale, offsetX, offsetY) {
 }
 
 function drawDimLine(ctx, x1, y1, x2, y2, label, position) {
-  const offset = 30; // pushed dimension lines further away from shape
-  const textOffset = 15; // distance of text from line
-  ctx.font = "18px Arial";
+  const scaleFactor = ctx.canvas.width / 900;
+  const offset = 20 * scaleFactor;
+  const textOffset = 10 * scaleFactor;
+  const scaleFactor = ctx.canvas.width / 900; 
+  ctx.font = (18 * scaleFactor) + "px Arial";
+
 
   let lineX1 = x1, lineY1 = y1;
   let lineX2 = x2, lineY2 = y2;
@@ -190,8 +193,10 @@ function drawDimLine(ctx, x1, y1, x2, y2, label, position) {
 
 function drawArrow(ctx, x1, y1, x2, y2) {
   const angle = Math.atan2(y2 - y1, x2 - x1);
-  const size = 8;
-  const arrowOffset = 6;
+  const scaleFactor = ctx.canvas.width / 900;
+  const size = 8 * scaleFactor;
+  const arrowOffset = 6 * scaleFactor;
+
 
   const tipX = x2 + arrowOffset * Math.cos(angle);
   const tipY = y2 + arrowOffset * Math.sin(angle);
@@ -321,43 +326,45 @@ function downloadPNG(){
   const name = document.getElementById("fileName").value || "trapezium";
 
   const canvas = document.getElementById("canvas");
-  const ctx = canvas.getContext("2d");
 
-  // save original size
   const oldWidth = canvas.width;
   const oldHeight = canvas.height;
 
-  // --- set 4K size ---
-  canvas.width = 3840;
-  canvas.height = 2160;
+  // longest side = 4K
+  const maxSize = 4096;
 
-  // redraw at 4K using SAME draw code
+  if (oldWidth > oldHeight) {
+    canvas.width = maxSize;
+    canvas.height = Math.round(maxSize * oldHeight / oldWidth);
+  } else {
+    canvas.height = maxSize;
+    canvas.width = Math.round(maxSize * oldWidth / oldHeight);
+  }
+
   drawTrapezium();
 
-  // --- add background ---
   const exportCanvas = document.createElement("canvas");
   exportCanvas.width = canvas.width;
   exportCanvas.height = canvas.height;
 
-  const exportCtx = exportCanvas.getContext("2d");
+  const ctx = exportCanvas.getContext("2d");
 
-  exportCtx.fillStyle = "#f3efe3"; // same background
-  exportCtx.fillRect(0,0,exportCanvas.width,exportCanvas.height);
+  ctx.fillStyle = "#f3efe3";
+  ctx.fillRect(0,0,exportCanvas.width,exportCanvas.height);
 
-  exportCtx.drawImage(canvas,0,0);
+  ctx.drawImage(canvas,0,0);
 
-  // download
   const link = document.createElement("a");
   link.download = name + ".png";
   link.href = exportCanvas.toDataURL("image/png");
   link.click();
 
-  // restore original size
   canvas.width = oldWidth;
   canvas.height = oldHeight;
 
   drawTrapezium();
 }
+
 
 
 
