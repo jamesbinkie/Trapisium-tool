@@ -236,18 +236,37 @@ function drawArrow(ctx, x1, y1, x2, y2) {
 // EDGE BANDING
 // -------------------------------
 
-function computeOffsetEdges(pts, scale, offsetX, offsetY, offsetPx){
-  const edges=[];
-  for(let i=0;i<pts.length;i++){
-    const p1=pts[i], p2=pts[(i+1)%pts.length];
-    const x1=p1[0]*scale+offsetX, y1=p1[1]*scale+offsetY;
-    const x2=p2[0]*scale+offsetX, y2=p2[1]*scale+offsetY;
-    const dx=x2-x1, dy=y2-y1, len=Math.sqrt(dx*dx+dy*dy);
-    const nx=-dy/len, ny=dx/len; // OUTSIDE normal
-    edges.push({x1:x1+nx*offsetPx, y1:y1+ny*offsetPx, x2:x2+nx*offsetPx, y2:y2+ny*offsetPx});
+function computeOffsetEdges(pts, scale, offsetX, offsetY, offsetPx) {
+  const edges = [];
+
+  for (let i = 0; i < pts.length; i++) {
+    const p1 = pts[i];
+    const p2 = pts[(i + 1) % pts.length];
+
+    const x1 = p1[0] * scale + offsetX;
+    const y1 = p1[1] * scale + offsetY;
+    const x2 = p2[0] * scale + offsetX;
+    const y2 = p2[1] * scale + offsetY;
+
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len = Math.sqrt(dx * dx + dy * dy);
+
+    // OUTSIDE normal (flip sign compared to inside)
+    const nx = -dy / len;  // negative dy
+    const ny = dx / len;   // positive dx
+
+    edges.push({
+      x1: x1 + nx * offsetPx,
+      y1: y1 + ny * offsetPx,
+      x2: x2 + nx * offsetPx,
+      y2: y2 + ny * offsetPx
+    });
   }
+
   return edges;
 }
+
 
 function intersectLines(e1,e2){
   const {x1:x1,y1:y1,x2:x2,y2:y2}=e1;
