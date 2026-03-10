@@ -8,6 +8,7 @@ function setupInputs() {
   const C = document.getElementById("C");
   const D = document.getElementById("D");
   const type = document.getElementById("type");
+  const Dlabel = document.getElementById("Dlabel");
 
   function clampOnBlur(input, min, max) {
     input.addEventListener("blur", () => {
@@ -67,9 +68,14 @@ function setupInputs() {
   });
 
   // Type change toggles D visibility
+  // UPDATED: use flex so layout matches other inputs, and hide when not irregular
   type.addEventListener("change", () => {
-    const Dlabel = document.getElementById("Dlabel");
-    Dlabel.style.display = type.value === "irregular" ? "inline-block" : "none";
+    if (type.value === "irregular") {
+      Dlabel.style.display = "flex";
+      Dlabel.style.flexDirection = "column";
+    } else {
+      Dlabel.style.display = "none";
+    }
     updateDynamicLimits();
     drawTrapezium();
   });
@@ -80,6 +86,14 @@ function setupInputs() {
   });
 
   updateDynamicLimits();
+
+  // Initial D visibility on load
+  if (type.value === "irregular") {
+    Dlabel.style.display = "flex";
+    Dlabel.style.flexDirection = "column";
+  } else {
+    Dlabel.style.display = "none";
+  }
 }
 
 function updateDynamicLimits() {
@@ -130,7 +144,11 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
-window.onload = setupInputs;
+// UPDATED: draw a shape by default when the page loads
+window.onload = function () {
+  setupInputs();
+  drawTrapezium();
+};
 
 
 // -------------------------------
