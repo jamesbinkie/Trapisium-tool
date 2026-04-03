@@ -486,44 +486,52 @@ function downloadDXF() {
   }
 
   const maxY = Math.max(...pts.map(p => p[1]));
+  const maxX = Math.max(...pts.map(p => p[0]));
 
-  // Strict R12 Format with required Table definitions
+  // Illustrator is extremely sensitive to the leading space " 0" vs "0"
+  // and the specific order of the header variables.
   let dxfLines = [
-    "0", "SECTION", "2", "HEADER", 
-    "9", "$ACADVER", "1", "AC1009", 
-    "0", "ENDSEC",
-    
-    "0", "SECTION", "2", "TABLES",
-    "0", "TABLE", "2", "VPORT", "70", "1",
-    "0", "VPORT", "2", "*ACTIVE", "70", "0", "10", "0.0", "20", "0.0", "11", "1.0", "12", "1.0",
-    "0", "ENDTAB",
-    "0", "TABLE", "2", "LTYPE", "70", "1",
-    "0", "LTYPE", "2", "CONTINUOUS", "70", "0", "3", "Solid line", "72", "65", "73", "0", "40", "0.0",
-    "0", "ENDTAB",
-    "0", "TABLE", "2", "LAYER", "70", "1",
-    "0", "LAYER", "2", "0", "70", "0", "62", "7", "6", "CONTINUOUS",
-    "0", "ENDTAB",
-    "0", "ENDSEC",
-    
-    "0", "SECTION", "2", "ENTITIES",
-    "0", "POLYLINE", "8", "0", "66", "1", "70", "1"
+    "  0", "SECTION",
+    "  2", "HEADER",
+    "  9", "$ACADVER",
+    "  1", "AC1009",
+    "  9", "$EXTMIN",
+    " 10", "0",
+    " 20", "0",
+    "  9", "$EXTMAX",
+    " 10", maxX.toString(),
+    " 20", maxY.toString(),
+    "  0", "ENDSEC",
+    "  0", "SECTION",
+    "  2", "ENTITIES",
+    "  0", "POLYLINE",
+    "  8", "0",
+    " 62", "7",
+    " 70", "1", // 1 = Closed polyline
+    " 66", "1"
   ];
 
   pts.forEach(p => {
     const x = p[0];
     const y = maxY - p[1];
     dxfLines.push(
-      "0", "VERTEX", "8", "0",
-      "10", x.toFixed(3),
-      "20", y.toFixed(3),
-      "30", "0.0" // Z-coordinate is often expected even if 0
+      "  0", "VERTEX",
+      "  8", "0",
+      " 10", x.toFixed(6),
+      " 20", y.toFixed(6),
+      " 70", "0"
     );
   });
 
-  dxfLines.push("0", "SEQEND", "0", "ENDSEC", "0", "EOF");
+  dxfLines.push(
+    "  0", "SEQEND",
+    "  8", "0",
+    "  0", "ENDSEC",
+    "  0", "EOF"
+  );
 
-  // Join with Windows Line Endings (CRLF)
-  const dxfString = dxfLines.join("\r\n");
+  // Join with CRLF and ensure a final newline
+  const dxfString = dxfLines.join("\r\n") + "\r\n";
 
   const blob = new Blob([dxfString], { type: "application/dxf" });
   const link = document.createElement("a");
