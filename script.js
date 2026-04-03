@@ -487,40 +487,42 @@ function downloadDXF() {
 
   const maxY = Math.max(...pts.map(p => p[1]));
 
-  // Use an array to manage lines cleanly
+  // Strict R12 Format with required Table definitions
   let dxfLines = [
-    "0", "SECTION",
-    "2", "HEADER",
-    "9", "$ACADVER", "1", "AC1009", // R12 Version
+    "0", "SECTION", "2", "HEADER", 
+    "9", "$ACADVER", "1", "AC1009", 
     "0", "ENDSEC",
-    "0", "SECTION",
-    "2", "ENTITIES",
-    "0", "POLYLINE", 
-    "8", "0",        // Layer 0
-    "66", "1",       // Vertices follow
-    "70", "1"        // Closed polyline
+    
+    "0", "SECTION", "2", "TABLES",
+    "0", "TABLE", "2", "VPORT", "70", "1",
+    "0", "VPORT", "2", "*ACTIVE", "70", "0", "10", "0.0", "20", "0.0", "11", "1.0", "12", "1.0",
+    "0", "ENDTAB",
+    "0", "TABLE", "2", "LTYPE", "70", "1",
+    "0", "LTYPE", "2", "CONTINUOUS", "70", "0", "3", "Solid line", "72", "65", "73", "0", "40", "0.0",
+    "0", "ENDTAB",
+    "0", "TABLE", "2", "LAYER", "70", "1",
+    "0", "LAYER", "2", "0", "70", "0", "62", "7", "6", "CONTINUOUS",
+    "0", "ENDTAB",
+    "0", "ENDSEC",
+    
+    "0", "SECTION", "2", "ENTITIES",
+    "0", "POLYLINE", "8", "0", "66", "1", "70", "1"
   ];
 
-  // Add each point as a separate VERTEX entity
   pts.forEach(p => {
     const x = p[0];
     const y = maxY - p[1];
     dxfLines.push(
-      "0", "VERTEX",
-      "8", "0",
-      "10", x.toFixed(4),
-      "20", y.toFixed(4)
+      "0", "VERTEX", "8", "0",
+      "10", x.toFixed(3),
+      "20", y.toFixed(3),
+      "30", "0.0" // Z-coordinate is often expected even if 0
     );
   });
 
-  // Close the polyline sequence and the section
-  dxfLines.push(
-    "0", "SEQEND",
-    "0", "ENDSEC",
-    "0", "EOF"
-  );
+  dxfLines.push("0", "SEQEND", "0", "ENDSEC", "0", "EOF");
 
-  // Join with \r\n (CRLF) which is mandatory for many CAD parsers
+  // Join with Windows Line Endings (CRLF)
   const dxfString = dxfLines.join("\r\n");
 
   const blob = new Blob([dxfString], { type: "application/dxf" });
