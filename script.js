@@ -487,23 +487,34 @@ function downloadDXF() {
 
   const maxY = Math.max(...pts.map(p => p[1]));
 
-  let dxf = "";
-  dxf += "0\nSECTION\n2\nHEADER\n0\nENDSEC\n";
-  dxf += "0\nSECTION\n2\nTABLES\n";
-  dxf += "0\nTABLE\n2\nLAYER\n70\n1\n";
-  dxf += "0\nLAYER\n2\n0\n70\n0\n62\n7\n6\nCONTINUOUS\n";
-  dxf += "0\nENDTAB\n0\nENDSEC\n";
-  dxf += "0\nSECTION\n2\nENTITIES\n";
-  dxf += "0\nLWPOLYLINE\n100\nAcDbPolyline\n90\n4\n70\n1\n8\n0\n";
+  // Helper to ensure DXF compatible line endings
+  const dxfLines = [
+    "0", "SECTION", "2", "HEADER",
+    "9", "$ACADVER", "1", "AC1009", // Tells Illustrator this is an R12 file
+    "0", "ENDSEC",
+    "0", "SECTION", "2", "TABLES",
+    "0", "TABLE", "2", "LAYER", "70", "1",
+    "0", "LAYER", "2", "0", "70", "0", "62", "7", "6", "CONTINUOUS",
+    "0", "ENDTAB",
+    "0", "ENDSEC",
+    "0", "SECTION", "2", "ENTITIES"
+  ];
 
+  // Draw the polyline
+  dxfLines.push("0", "LWPOLYLINE", "100", "AcDbPolyline", "90", "4", "70", "1", "8", "0");
+  
   pts.forEach(p => {
-    const x = p[0], y = maxY - p[1];
-    dxf += `10\n${x}\n20\n${y}\n`;
+    const x = p[0];
+    const y = maxY - p[1];
+    dxfLines.push("10", x.toString(), "20", y.toString());
   });
 
-  dxf += "0\nENDSEC\n0\nEOF";
+  dxfLines.push("0", "ENDSEC", "0", "EOF");
 
-  const blob = new Blob([dxf], { type: "application/dxf" });
+  // Join with CRLF for maximum compatibility
+  const dxfString = dxfLines.join("\r\n");
+
+  const blob = new Blob([dxfString], { type: "application/dxf" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
   link.download = name + ".dxf";
